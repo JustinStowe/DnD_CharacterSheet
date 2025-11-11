@@ -1,12 +1,12 @@
 @echo off
-echo Building D&D Character Sheet executable...
+echo Building D^&D Character Sheet executable...
 echo.
 
 REM Install PyInstaller if not already installed
-pip install pyinstaller
+python -m pip install pyinstaller
 
-REM Build the executable
-pyinstaller --onefile --windowed --name "DnD_CharacterSheet" --icon=icon.ico character_sheet_gui.py
+REM Build the executable (without icon - you can add one later)
+python -m PyInstaller --onefile --windowed --name "DnD_CharacterSheet" character_sheet_gui.py
 
 echo.
 echo Build complete! Check the 'dist' folder for your executable.
