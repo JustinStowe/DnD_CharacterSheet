@@ -1,0 +1,260 @@
+{
+  "name": "Thorin Ironforge",
+  "player": "Sample Player",
+  "character_class": "Fighter",
+  "level": 5,
+  "race": "Dwarf",
+  "alignment": "Lawful Good",
+  "deity": "Moradin",
+  "size": "Medium",
+  "age": 45,
+  "gender": "Male",
+  "height": "4'2\"",
+  "weight": "165 lbs",
+  "experience": 10000,
+  "next_level_xp": 15000,
+  "hit_dice": [
+    [10, 10],
+    [10, 7],
+    [10, 8],
+    [10, 6],
+    [10, 9]
+  ],
+  "strength": 16,
+  "dexterity": 12,
+  "constitution": 16,
+  "intelligence": 10,
+  "wisdom": 14,
+  "charisma": 8,
+  "str_temp_mod": 0,
+  "dex_temp_mod": 0,
+  "con_temp_mod": 0,
+  "int_temp_mod": 0,
+  "wis_temp_mod": 0,
+  "cha_temp_mod": 0,
+  "max_hp": 52,
+  "current_hp": 52,
+  "skill_points_available": 0,
+  "armor_bonus": 6,
+  "shield_bonus": 2,
+  "natural_armor": 0,
+  "deflection_bonus": 0,
+  "misc_ac_bonus": 0,
+  "fort_base": 4,
+  "ref_base": 1,
+  "will_base": 1,
+  "fort_misc": 2,
+  "ref_misc": 0,
+  "will_misc": 0,
+  "base_attack_bonus": 5,
+  "initiative_misc": 0,
+  "spell_resistance": 0,
+  "skills": {
+    "Appraise": 0,
+    "Balance": 0,
+    "Bluff": 0,
+    "Climb": 5,
+    "Concentration": 0,
+    "Craft": 8,
+    "Decipher Script": 0,
+    "Diplomacy": 0,
+    "Disable Device": 0,
+    "Disguise": 0,
+    "Escape Artist": 0,
+    "Forgery": 0,
+    "Gather Information": 0,
+    "Handle Animal": 0,
+    "Heal": 0,
+    "Hide": 0,
+    "Intimidate": 5,
+    "Jump": 5,
+    "Knowledge (Arcana)": 0,
+    "Knowledge (Religion)": 0,
+    "Knowledge (Nature)": 0,
+    "Listen": 2,
+    "Move Silently": 0,
+    "Open Lock": 0,
+    "Perform": 0,
+    "Ride": 2,
+    "Search": 0,
+    "Sense Motive": 0,
+    "Sleight of Hand": 0,
+    "Spellcraft": 0,
+    "Spot": 2,
+    "Survival": 0,
+    "Swim": 5,
+    "Tumble": 0,
+    "Use Magic Device": 0,
+    "Use Rope": 0
+  },
+  "skill_misc": {
+    "Appraise": 0,
+    "Balance": 0,
+    "Bluff": 0,
+    "Climb": 0,
+    "Concentration": 0,
+    "Craft": 0,
+    "Decipher Script": 0,
+    "Diplomacy": 0,
+    "Disable Device": 0,
+    "Disguise": 0,
+    "Escape Artist": 0,
+    "Forgery": 0,
+    "Gather Information": 0,
+    "Handle Animal": 0,
+    "Heal": 0,
+    "Hide": 0,
+    "Intimidate": 0,
+    "Jump": 0,
+    "Knowledge (Arcana)": 0,
+    "Knowledge (Religion)": 0,
+    "Knowledge (Nature)": 0,
+    "Listen": 0,
+    "Move Silently": 0,
+    "Open Lock": 0,
+    "Perform": 0,
+    "Ride": 0,
+    "Search": 0,
+    "Sense Motive": 0,
+    "Sleight of Hand": 0,
+    "Spellcraft": 0,
+    "Spot": 0,
+    "Survival": 0,
+    "Swim": 0,
+    "Tumble": 0,
+    "Use Magic Device": 0,
+    "Use Rope": 0
+  },
+  "inventory": [
+    {
+      "name": "Dwarven Waraxe",
+      "weight": 8.0,
+      "quantity": 1,
+      "notes": "+1 enchanted"
+    },
+    {
+      "name": "Chainmail",
+      "weight": 40.0,
+      "quantity": 1,
+      "notes": "Armor"
+    },
+    {
+      "name": "Heavy Steel Shield",
+      "weight": 15.0,
+      "quantity": 1,
+      "notes": ""
+    },
+    {
+      "name": "Backpack",
+      "weight": 2.0,
+      "quantity": 1,
+      "notes": "With standard gear"
+    },
+    {
+      "name": "Rope, Hempen (50 ft)",
+      "weight": 10.0,
+      "quantity": 1,
+      "notes": ""
+    },
+    {
+      "name": "Rations, Trail",
+      "weight": 1.0,
+      "quantity": 5,
+      "notes": "5 days"
+    },
+    {
+      "name": "Waterskin",
+      "weight": 4.0,
+      "quantity": 1,
+      "notes": "Full"
+    },
+    {
+      "name": "Gold Pieces",
+      "weight": 0.02,
+      "quantity": 350,
+      "notes": "7 lbs total"
+    }
+  ],
+  "spellcasting_ability": "intelligence",
+  "spell_slots_max": {
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 0,
+    "7": 0,
+    "8": 0,
+    "9": 0
+  },
+  "spell_slots_used": {
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 0,
+    "7": 0,
+    "8": 0,
+    "9": 0
+  },
+  "spells": [],
+  "feats": [
+    {
+      "name": "Power Attack",
+      "type": "Combat",
+      "prerequisites": "Str 13+",
+      "benefit": "On your action, before making attack rolls for a round, you may choose to subtract a number from all melee attack rolls and add the same number to all melee damage rolls. This number may not exceed your base attack bonus. The penalty on attacks and bonus on damage apply until your next turn."
+    },
+    {
+      "name": "Cleave",
+      "type": "Combat",
+      "prerequisites": "Str 13+, Power Attack",
+      "benefit": "If you deal a creature enough damage to make it drop (typically by dropping it to below 0 hit points or killing it), you get an immediate, extra melee attack against another creature within reach. You cannot take a 5-foot step before making this extra attack. The extra attack is with the same weapon and at the same bonus as the attack that dropped the previous creature."
+    },
+    {
+      "name": "Weapon Focus (Dwarven Waraxe)",
+      "type": "Combat",
+      "prerequisites": "Base attack bonus +1",
+      "benefit": "You gain a +1 bonus on all attack rolls you make using the selected weapon (Dwarven Waraxe)."
+    },
+    {
+      "name": "Toughness",
+      "type": "General",
+      "prerequisites": "None",
+      "benefit": "You gain +3 hit points."
+    }
+  ],
+  "special_abilities": [
+    {
+      "name": "Darkvision",
+      "source": "Racial",
+      "description": "Dwarves can see in the dark up to 60 feet. Darkvision is black and white only, but it is otherwise like normal sight.",
+      "uses_per_day": 0,
+      "uses_remaining": 0
+    },
+    {
+      "name": "Stonecunning",
+      "source": "Racial",
+      "description": "+2 bonus on Search checks to notice unusual stonework. A dwarf who merely comes within 10 feet of unusual stonework can make a Search check as if actively searching.",
+      "uses_per_day": 0,
+      "uses_remaining": 0
+    },
+    {
+      "name": "Stability",
+      "source": "Racial",
+      "description": "+4 bonus on ability checks made to resist being bull rushed or tripped when standing on the ground.",
+      "uses_per_day": 0,
+      "uses_remaining": 0
+    },
+    {
+      "name": "Action Surge",
+      "source": "Class",
+      "description": "Once per day, you can take an extra move action or standard action in a round.",
+      "uses_per_day": 1,
+      "uses_remaining": 1
+    }
+  ]
+}
