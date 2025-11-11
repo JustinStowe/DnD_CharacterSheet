@@ -1,0 +1,1140 @@
+"""
+D&D 3rd Edition Character Model
+Handles all character statistics and automatic calculations
+"""
+
+# D&D 3e Class definitions
+CLASS_DEFINITIONS = {
+    'Fighter': {
+        'hit_die': 10,
+        'bab_progression': 'full',  # BAB = level
+        'fort_progression': 'good',  # 2 + level/2
+        'ref_progression': 'poor',   # 0 + level/3
+        'will_progression': 'poor',
+        'skill_points': 2,
+        'spellcasting_ability': None
+    },
+    'Barbarian': {
+        'hit_die': 12,
+        'bab_progression': 'full',
+        'fort_progression': 'good',
+        'ref_progression': 'poor',
+        'will_progression': 'poor',
+        'skill_points': 4,
+        'spellcasting_ability': None
+    },
+    'Ranger': {
+        'hit_die': 8,
+        'bab_progression': 'full',
+        'fort_progression': 'good',
+        'ref_progression': 'good',
+        'will_progression': 'poor',
+        'skill_points': 6,
+        'spellcasting_ability': 'wisdom'
+    },
+    'Paladin': {
+        'hit_die': 10,
+        'bab_progression': 'full',
+        'fort_progression': 'good',
+        'ref_progression': 'poor',
+        'will_progression': 'poor',
+        'skill_points': 2,
+        'spellcasting_ability': 'wisdom'
+    },
+    'Cleric': {
+        'hit_die': 8,
+        'bab_progression': 'medium',  # BAB = level * 3/4
+        'fort_progression': 'good',
+        'ref_progression': 'poor',
+        'will_progression': 'good',
+        'skill_points': 2,
+        'spellcasting_ability': 'wisdom'
+    },
+    'Druid': {
+        'hit_die': 8,
+        'bab_progression': 'medium',
+        'fort_progression': 'good',
+        'ref_progression': 'poor',
+        'will_progression': 'good',
+        'skill_points': 4,
+        'spellcasting_ability': 'wisdom'
+    },
+    'Monk': {
+        'hit_die': 8,
+        'bab_progression': 'medium',
+        'fort_progression': 'good',
+        'ref_progression': 'good',
+        'will_progression': 'good',
+        'skill_points': 4,
+        'spellcasting_ability': None
+    },
+    'Rogue': {
+        'hit_die': 6,
+        'bab_progression': 'medium',
+        'fort_progression': 'poor',
+        'ref_progression': 'good',
+        'will_progression': 'poor',
+        'skill_points': 8,
+        'spellcasting_ability': None
+    },
+    'Bard': {
+        'hit_die': 6,
+        'bab_progression': 'medium',
+        'fort_progression': 'poor',
+        'ref_progression': 'good',
+        'will_progression': 'good',
+        'skill_points': 6,
+        'spellcasting_ability': 'charisma'
+    },
+    'Wizard': {
+        'hit_die': 4,
+        'bab_progression': 'poor',  # BAB = level/2
+        'fort_progression': 'poor',
+        'ref_progression': 'poor',
+        'will_progression': 'good',
+        'skill_points': 2,
+        'spellcasting_ability': 'intelligence'
+    },
+    'Sorcerer': {
+        'hit_die': 4,
+        'bab_progression': 'poor',
+        'fort_progression': 'poor',
+        'ref_progression': 'poor',
+        'will_progression': 'good',
+        'skill_points': 2,
+        'spellcasting_ability': 'charisma'
+    }
+}
+
+# Spells per day by class and level (D&D 3e)
+# Format: {level: {spell_level: spells_per_day}}
+SPELL_PROGRESSION = {
+    'Bard': {
+        1: {0: 2, 1: 0},
+        2: {0: 3, 1: 1},
+        3: {0: 3, 1: 2},
+        4: {0: 3, 1: 3, 2: 0},
+        5: {0: 3, 1: 3, 2: 1},
+        6: {0: 3, 1: 3, 2: 2},
+        7: {0: 3, 1: 3, 2: 3, 3: 0},
+        8: {0: 3, 1: 3, 2: 3, 3: 1},
+        9: {0: 3, 1: 3, 2: 3, 3: 2},
+        10: {0: 3, 1: 3, 2: 3, 3: 3, 4: 0},
+        11: {0: 3, 1: 3, 2: 3, 3: 3, 4: 1},
+        12: {0: 3, 1: 3, 2: 3, 3: 3, 4: 2},
+        13: {0: 3, 1: 3, 2: 3, 3: 3, 4: 3, 5: 0},
+        14: {0: 4, 1: 3, 2: 3, 3: 3, 4: 3, 5: 1},
+        15: {0: 4, 1: 4, 2: 3, 3: 3, 4: 3, 5: 2},
+        16: {0: 4, 1: 4, 2: 4, 3: 3, 4: 3, 5: 3, 6: 0},
+        17: {0: 4, 1: 4, 2: 4, 3: 4, 4: 3, 5: 3, 6: 1},
+        18: {0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 3, 6: 2},
+        19: {0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 3},
+        20: {0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4}
+    },
+    'Cleric': {
+        1: {0: 3, 1: 1},
+        2: {0: 4, 1: 2},
+        3: {0: 4, 1: 2, 2: 1},
+        4: {0: 5, 1: 3, 2: 2},
+        5: {0: 5, 1: 3, 2: 2, 3: 1},
+        6: {0: 5, 1: 3, 2: 3, 3: 2},
+        7: {0: 6, 1: 4, 2: 3, 3: 2, 4: 1},
+        8: {0: 6, 1: 4, 2: 3, 3: 3, 4: 2},
+        9: {0: 6, 1: 4, 2: 4, 3: 3, 4: 2, 5: 1},
+        10: {0: 6, 1: 4, 2: 4, 3: 3, 4: 3, 5: 2},
+        11: {0: 6, 1: 5, 2: 4, 3: 4, 4: 3, 5: 2, 6: 1},
+        12: {0: 6, 1: 5, 2: 4, 3: 4, 4: 3, 5: 3, 6: 2},
+        13: {0: 6, 1: 5, 2: 5, 3: 4, 4: 4, 5: 3, 6: 2, 7: 1},
+        14: {0: 6, 1: 5, 2: 5, 3: 4, 4: 4, 5: 3, 6: 3, 7: 2},
+        15: {0: 6, 1: 5, 2: 5, 3: 5, 4: 4, 5: 4, 6: 3, 7: 2, 8: 1},
+        16: {0: 6, 1: 5, 2: 5, 3: 5, 4: 4, 5: 4, 6: 3, 7: 3, 8: 2},
+        17: {0: 6, 1: 5, 2: 5, 3: 5, 4: 5, 5: 4, 6: 4, 7: 3, 8: 2, 9: 1},
+        18: {0: 6, 1: 5, 2: 5, 3: 5, 4: 5, 5: 4, 6: 4, 7: 3, 8: 3, 9: 2},
+        19: {0: 6, 1: 5, 2: 5, 3: 5, 4: 5, 5: 5, 6: 4, 7: 4, 8: 3, 9: 3},
+        20: {0: 6, 1: 5, 2: 5, 3: 5, 4: 5, 5: 5, 6: 4, 7: 4, 8: 4, 9: 4}
+    },
+    'Druid': {
+        1: {0: 3, 1: 1},
+        2: {0: 4, 1: 2},
+        3: {0: 4, 1: 2, 2: 1},
+        4: {0: 5, 1: 3, 2: 2},
+        5: {0: 5, 1: 3, 2: 2, 3: 1},
+        6: {0: 5, 1: 3, 2: 3, 3: 2},
+        7: {0: 6, 1: 4, 2: 3, 3: 2, 4: 1},
+        8: {0: 6, 1: 4, 2: 3, 3: 3, 4: 2},
+        9: {0: 6, 1: 4, 2: 4, 3: 3, 4: 2, 5: 1},
+        10: {0: 6, 1: 4, 2: 4, 3: 3, 4: 3, 5: 2},
+        11: {0: 6, 1: 5, 2: 4, 3: 4, 4: 3, 5: 2, 6: 1},
+        12: {0: 6, 1: 5, 2: 4, 3: 4, 4: 3, 5: 3, 6: 2},
+        13: {0: 6, 1: 5, 2: 5, 3: 4, 4: 4, 5: 3, 6: 2, 7: 1},
+        14: {0: 6, 1: 5, 2: 5, 3: 4, 4: 4, 5: 3, 6: 3, 7: 2},
+        15: {0: 6, 1: 5, 2: 5, 3: 5, 4: 4, 5: 4, 6: 3, 7: 2, 8: 1},
+        16: {0: 6, 1: 5, 2: 5, 3: 5, 4: 4, 5: 4, 6: 3, 7: 3, 8: 2},
+        17: {0: 6, 1: 5, 2: 5, 3: 5, 4: 5, 5: 4, 6: 4, 7: 3, 8: 2, 9: 1},
+        18: {0: 6, 1: 5, 2: 5, 3: 5, 4: 5, 5: 4, 6: 4, 7: 3, 8: 3, 9: 2},
+        19: {0: 6, 1: 5, 2: 5, 3: 5, 4: 5, 5: 5, 6: 4, 7: 4, 8: 3, 9: 3},
+        20: {0: 6, 1: 5, 2: 5, 3: 5, 4: 5, 5: 5, 6: 4, 7: 4, 8: 4, 9: 4}
+    },
+    'Paladin': {
+        1: {0: 0},
+        2: {0: 0},
+        3: {0: 0},
+        4: {0: 0, 1: 0},
+        5: {0: 0, 1: 0},
+        6: {0: 0, 1: 1},
+        7: {0: 0, 1: 1},
+        8: {0: 0, 1: 1, 2: 0},
+        9: {0: 0, 1: 1, 2: 0},
+        10: {0: 0, 1: 1, 2: 1},
+        11: {0: 0, 1: 1, 2: 1, 3: 0},
+        12: {0: 0, 1: 1, 2: 1, 3: 0},
+        13: {0: 0, 1: 1, 2: 1, 3: 1},
+        14: {0: 0, 1: 2, 2: 1, 3: 1, 4: 0},
+        15: {0: 0, 1: 2, 2: 1, 3: 1, 4: 0},
+        16: {0: 0, 1: 2, 2: 2, 3: 1, 4: 1},
+        17: {0: 0, 1: 2, 2: 2, 3: 2, 4: 1},
+        18: {0: 0, 1: 3, 2: 2, 3: 2, 4: 1},
+        19: {0: 0, 1: 3, 2: 3, 3: 3, 4: 2},
+        20: {0: 0, 1: 3, 2: 3, 3: 3, 4: 3}
+    },
+    'Ranger': {
+        1: {0: 0},
+        2: {0: 0},
+        3: {0: 0},
+        4: {0: 0, 1: 0},
+        5: {0: 0, 1: 0},
+        6: {0: 0, 1: 1},
+        7: {0: 0, 1: 1},
+        8: {0: 0, 1: 1, 2: 0},
+        9: {0: 0, 1: 1, 2: 0},
+        10: {0: 0, 1: 1, 2: 1},
+        11: {0: 0, 1: 1, 2: 1, 3: 0},
+        12: {0: 0, 1: 1, 2: 1, 3: 0},
+        13: {0: 0, 1: 1, 2: 1, 3: 1},
+        14: {0: 0, 1: 2, 2: 1, 3: 1, 4: 0},
+        15: {0: 0, 1: 2, 2: 1, 3: 1, 4: 0},
+        16: {0: 0, 1: 2, 2: 2, 3: 1, 4: 1},
+        17: {0: 0, 1: 2, 2: 2, 3: 2, 4: 1},
+        18: {0: 0, 1: 3, 2: 2, 3: 2, 4: 1},
+        19: {0: 0, 1: 3, 2: 3, 3: 3, 4: 2},
+        20: {0: 0, 1: 3, 2: 3, 3: 3, 4: 3}
+    },
+    'Sorcerer': {
+        1: {0: 5, 1: 3},
+        2: {0: 6, 1: 4},
+        3: {0: 6, 1: 5},
+        4: {0: 6, 1: 6, 2: 3},
+        5: {0: 6, 1: 6, 2: 4},
+        6: {0: 6, 1: 6, 2: 5, 3: 3},
+        7: {0: 6, 1: 6, 2: 6, 3: 4},
+        8: {0: 6, 1: 6, 2: 6, 3: 5, 4: 3},
+        9: {0: 6, 1: 6, 2: 6, 3: 6, 4: 4},
+        10: {0: 6, 1: 6, 2: 6, 3: 6, 4: 5, 5: 3},
+        11: {0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 4},
+        12: {0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 5, 6: 3},
+        13: {0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 4},
+        14: {0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 5, 7: 3},
+        15: {0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 6, 7: 4},
+        16: {0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 6, 7: 5, 8: 3},
+        17: {0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 6, 7: 6, 8: 4},
+        18: {0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 6, 7: 6, 8: 5, 9: 3},
+        19: {0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 6, 7: 6, 8: 6, 9: 4},
+        20: {0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 6, 7: 6, 8: 6, 9: 6}
+    },
+    'Wizard': {
+        1: {0: 3, 1: 1},
+        2: {0: 4, 1: 2},
+        3: {0: 4, 1: 2, 2: 1},
+        4: {0: 4, 1: 3, 2: 2},
+        5: {0: 4, 1: 3, 2: 2, 3: 1},
+        6: {0: 4, 1: 3, 2: 3, 3: 2},
+        7: {0: 4, 1: 4, 2: 3, 3: 2, 4: 1},
+        8: {0: 4, 1: 4, 2: 3, 3: 3, 4: 2},
+        9: {0: 4, 1: 4, 2: 4, 3: 3, 4: 2, 5: 1},
+        10: {0: 4, 1: 4, 2: 4, 3: 3, 4: 3, 5: 2},
+        11: {0: 4, 1: 4, 2: 4, 3: 4, 4: 3, 5: 2, 6: 1},
+        12: {0: 4, 1: 4, 2: 4, 3: 4, 4: 3, 5: 3, 6: 2},
+        13: {0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 3, 6: 2, 7: 1},
+        14: {0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 3, 6: 3, 7: 2},
+        15: {0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 3, 7: 2, 8: 1},
+        16: {0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 3, 7: 3, 8: 2},
+        17: {0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 3, 8: 2, 9: 1},
+        18: {0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 3, 8: 3, 9: 2},
+        19: {0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4, 8: 3, 9: 3},
+        20: {0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4, 8: 4, 9: 4}
+    }
+}
+
+
+class Character:
+    """Represents a D&D 3e character with auto-calculating stats"""
+    
+    def __init__(self):
+        # Basic Info
+        self.name = ""
+        self.player = ""
+        self.character_class = "Fighter"  # Default class
+        self.level = 1
+        self.race = ""
+        self.alignment = ""
+        self.deity = ""
+        self.size = "Medium"
+        self.age = 0
+        self.gender = ""
+        self.height = ""
+        self.weight = ""
+        
+        # Level tracking
+        self.experience = 0
+        self.next_level_xp = 1000  # XP needed for level 2
+        
+        # Ability Scores (base values)
+        self.strength = 10
+        self.dexterity = 10
+        self.constitution = 10
+        self.intelligence = 10
+        self.wisdom = 10
+        self.charisma = 10
+        
+        # Ability Score Modifiers (temporary)
+        self.str_temp_mod = 0
+        self.dex_temp_mod = 0
+        self.con_temp_mod = 0
+        self.int_temp_mod = 0
+        self.wis_temp_mod = 0
+        self.cha_temp_mod = 0
+        
+        # Hit Points
+        self.max_hp = 0
+        self.current_hp = 0
+        self.hit_dice = []  # List of dice rolled for each level: [(die_size, roll), ...]
+        
+        # Armor Class modifiers
+        self.armor_bonus = 0
+        self.shield_bonus = 0
+        self.natural_armor = 0
+        self.deflection_bonus = 0
+        self.misc_ac_bonus = 0
+        
+        # Saves (base modifiers from class/race/feats)
+        self.fort_base = 2  # Good save starts at 2
+        self.ref_base = 0
+        self.will_base = 0
+        self.fort_misc = 0
+        self.ref_misc = 0
+        self.will_misc = 0
+        
+        # Combat
+        self.base_attack_bonus = 1  # Fighter starts at +1
+        self.initiative_misc = 0
+        self.spell_resistance = 0
+        
+        # Skills (only storing ranks, modifiers calculated)
+        self.skill_points_available = 0  # Unspent skill points
+        self.skills = {
+            'Appraise': 0,
+            'Balance': 0,
+            'Bluff': 0,
+            'Climb': 0,
+            'Concentration': 0,
+            'Craft': 0,
+            'Decipher Script': 0,
+            'Diplomacy': 0,
+            'Disable Device': 0,
+            'Disguise': 0,
+            'Escape Artist': 0,
+            'Forgery': 0,
+            'Gather Information': 0,
+            'Handle Animal': 0,
+            'Heal': 0,
+            'Hide': 0,
+            'Innuendo': 0,
+            'Intimidate': 0,
+            'Jump': 0,
+            'Knowledge (Arcana)': 0,
+            'Knowledge (Religion)': 0,
+            'Knowledge (Nature)': 0,
+            'Knowledge (Planes)': 0,
+            'Knowledge (Engineering)': 0,
+            'Listen': 0,
+            'Move Silently': 0,
+            'Open Lock': 0,
+            'Perform': 0,
+            'Profession': 0,
+            'Ride': 0,
+            'Search': 0,
+            'Sense Motive': 0,
+            'Sleight of Hand': 0,
+            'Spellcraft': 0,
+            'Spot': 0,
+            'Survival': 0,
+            'Swim': 0,
+            'Tumble': 0,
+            'Use Magic Device': 0,
+            'Use Rope': 0,
+            'Wilderness Lore': 0
+        }
+        
+        # Skill ability mapping (which ability score affects each skill)
+        self.skill_abilities = {
+            'Appraise': 'int',
+            'Balance': 'dex',
+            'Bluff': 'cha',
+            'Climb': 'str',
+            'Concentration': 'con',
+            'Craft': 'int',
+            'Decipher Script': 'int',
+            'Diplomacy': 'cha',
+            'Disable Device': 'int',
+            'Disguise': 'cha',
+            'Escape Artist': 'dex',
+            'Forgery': 'int',
+            'Gather Information': 'cha',
+            'Handle Animal': 'cha',
+            'Heal': 'wis',
+            'Hide': 'dex',
+            'Innuendo': 'wis',
+            'Intimidate': 'cha',
+            'Jump': 'str',
+            'Knowledge (Arcana)': 'int',
+            'Knowledge (Religion)': 'int',
+            'Knowledge (Nature)': 'int',
+            'Knowledge (Planes)': 'int',
+            'Knowledge (Engineering)': 'int',
+            'Listen': 'wis',
+            'Move Silently': 'dex',
+            'Open Lock': 'dex',
+            'Perform': 'cha',
+            'Profession': 'cha',
+            'Ride': 'dex',
+            'Search': 'int',
+            'Sense Motive': 'wis',
+            'Sleight of Hand': 'dex',
+            'Spellcraft': 'int',
+            'Spot': 'wis',
+            'Survival': 'wis',
+            'Swim': 'str',
+            'Tumble': 'dex',
+            'Use Magic Device': 'cha',
+            'Use Rope': 'dex',
+            'Wilderness Lore' : 'wis'
+        }
+        
+        # Skill misc modifiers
+        self.skill_misc = {skill: 0 for skill in self.skills.keys()}
+        
+        # Inventory
+        self.inventory = []  # List of dicts: {'name': str, 'weight': float, 'quantity': int, 'notes': str}
+        
+        # Spellcasting
+        self.spellcasting_ability = 'intelligence'  # 'intelligence', 'wisdom', or 'charisma'
+        self.spell_slots_max = {
+            0: 0,  # Cantrips/Orisons
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 0,
+            5: 0,
+            6: 0,
+            7: 0,
+            8: 0,
+            9: 0
+        }
+        self.spell_slots_used = {
+            0: 0,
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 0,
+            5: 0,
+            6: 0,
+            7: 0,
+            8: 0,
+            9: 0
+        }
+        # Spell list: list of dicts with spell information
+        self.spells = []
+        # Each spell: {
+        #   'name': str,
+        #   'level': int,
+        #   'school': str,
+        #   'casting_time': str,
+        #   'range': str,
+        #   'components': str,
+        #   'duration': str,
+        #   'saving_throw': str,
+        #   'spell_resistance': str,
+        #   'description': str,
+        #   'prepared': bool (for prepared casters)
+        # }
+        
+        # Feats
+        self.feats = []
+        # Each feat: {
+        #   'name': str,
+        #   'type': str (General, Metamagic, Item Creation, etc.),
+        #   'description': str,
+        #   'prerequisites': str,
+        #   'benefit': str
+        # }
+        
+        # Special Abilities
+        self.special_abilities = []
+        # Each ability: {
+        #   'name': str,
+        #   'source': str (Racial, Class, Feat, etc.),
+        #   'description': str,
+        #   'uses_per_day': int (0 for at-will/passive),
+        #   'uses_remaining': int
+        # }
+        
+        # Weapons
+        self.weapons = []
+        # Each weapon: {
+        #   'name': str,
+        #   'type': str,  # 'melee' or 'ranged'
+        #   'damage': str,  # e.g., '1d8', '2d6'
+        #   'critical': str,  # e.g., '19-20/x2', 'x3'
+        #   'range': str,  # e.g., '30 ft', 'melee'
+        #   'damage_type': str,  # Slashing, Piercing, Bludgeoning, etc.
+        #   'size': str,  # Fine, Diminutive, Tiny, Small, Medium, Large, etc.
+        #   'weight': float,  # Weight in lbs
+        #   'attack_bonus': int,  # Enhancement bonus (e.g., +1, +2)
+        #   'misc_attack': int,  # Other attack bonuses
+        #   'damage_bonus': int,  # Additional damage bonus beyond STR/DEX
+        #   'notes': str
+        # }
+        
+        # Magic Items
+        self.magic_items = []
+        # Each item: {
+        #   'name': str,
+        #   'type': str,  # Weapon, Armor, Ring, Wondrous, Potion, Scroll, Wand, Rod, Staff, etc.
+        #   'slot': str,  # Head, Eyes, Neck, Shoulders, Body, Torso, Arms, Hands, Ring, Waist, Feet, None
+        #   'caster_level': int,
+        #   'description': str,
+        #   'properties': str,  # Special abilities/bonuses
+        #   'charges': int,  # For items with charges (0 for non-charged items)
+        #   'max_charges': int
+        # }
+        
+    def get_ability_modifier(self, ability_score):
+        """Calculate ability modifier from score"""
+        return (ability_score - 10) // 2
+    
+    def get_str_modifier(self):
+        """Get Strength modifier"""
+        return self.get_ability_modifier(self.strength + self.str_temp_mod)
+    
+    def get_dex_modifier(self):
+        """Get Dexterity modifier"""
+        return self.get_ability_modifier(self.dexterity + self.dex_temp_mod)
+    
+    def get_con_modifier(self):
+        """Get Constitution modifier"""
+        return self.get_ability_modifier(self.constitution + self.con_temp_mod)
+    
+    def get_int_modifier(self):
+        """Get Intelligence modifier"""
+        return self.get_ability_modifier(self.intelligence + self.int_temp_mod)
+    
+    def get_wis_modifier(self):
+        """Get Wisdom modifier"""
+        return self.get_ability_modifier(self.wisdom + self.wis_temp_mod)
+    
+    def get_cha_modifier(self):
+        """Get Charisma modifier"""
+        return self.get_ability_modifier(self.charisma + self.cha_temp_mod)
+    
+    def get_fortitude_save(self):
+        """Calculate total Fortitude save"""
+        return self.fort_base + self.get_con_modifier() + self.fort_misc
+    
+    def get_reflex_save(self):
+        """Calculate total Reflex save"""
+        return self.ref_base + self.get_dex_modifier() + self.ref_misc
+    
+    def get_will_save(self):
+        """Calculate total Will save"""
+        return self.will_base + self.get_wis_modifier() + self.will_misc
+    
+    def get_ac(self):
+        """Calculate total Armor Class"""
+        return (10 + self.armor_bonus + self.shield_bonus + 
+                self.get_dex_modifier() + self.natural_armor + 
+                self.deflection_bonus + self.misc_ac_bonus)
+    
+    def get_touch_ac(self):
+        """Calculate Touch AC (no armor/shield/natural)"""
+        return 10 + self.get_dex_modifier() + self.deflection_bonus + self.misc_ac_bonus
+    
+    def get_flat_footed_ac(self):
+        """Calculate Flat-footed AC (no dex bonus)"""
+        return (10 + self.armor_bonus + self.shield_bonus + 
+                self.natural_armor + self.deflection_bonus + self.misc_ac_bonus)
+    
+    def get_initiative(self):
+        """Calculate initiative"""
+        return self.get_dex_modifier() + self.initiative_misc
+    
+    def get_skill_total(self, skill_name):
+        """Calculate total skill bonus"""
+        if skill_name not in self.skills:
+            return 0
+        
+        ranks = self.skills[skill_name]
+        ability = self.skill_abilities[skill_name]
+        
+        # Get the appropriate ability modifier
+        if ability == 'str':
+            ability_mod = self.get_str_modifier()
+        elif ability == 'dex':
+            ability_mod = self.get_dex_modifier()
+        elif ability == 'con':
+            ability_mod = self.get_con_modifier()
+        elif ability == 'int':
+            ability_mod = self.get_int_modifier()
+        elif ability == 'wis':
+            ability_mod = self.get_wis_modifier()
+        elif ability == 'cha':
+            ability_mod = self.get_cha_modifier()
+        else:
+            ability_mod = 0
+        
+        misc = self.skill_misc.get(skill_name, 0)
+        
+        return ranks + ability_mod + misc
+    
+    def get_class_info(self):
+        """Get class information from CLASS_DEFINITIONS"""
+        return CLASS_DEFINITIONS.get(self.character_class, CLASS_DEFINITIONS['Fighter'])
+    
+    def get_base_attack_bonus_from_class(self):
+        """Calculate BAB based on class and level"""
+        class_info = self.get_class_info()
+        progression = class_info['bab_progression']
+        
+        if progression == 'full':
+            return self.level
+        elif progression == 'medium':
+            return (self.level * 3) // 4
+        else:  # poor
+            return self.level // 2
+    
+    def get_base_save_from_class(self, save_type):
+        """Calculate base save bonus from class and level
+        Args:
+            save_type: 'fort', 'ref', or 'will'
+        """
+        class_info = self.get_class_info()
+        progression_key = f'{save_type}_progression'
+        progression = class_info[progression_key]
+        
+        if progression == 'good':
+            return 2 + (self.level // 2)
+        else:  # poor
+            return self.level // 3
+    
+    def update_class_based_stats(self):
+        """Update BAB and saves based on current class and level"""
+        self.base_attack_bonus = self.get_base_attack_bonus_from_class()
+        self.fort_base = self.get_base_save_from_class('fort')
+        self.ref_base = self.get_base_save_from_class('ref')
+        self.will_base = self.get_base_save_from_class('will')
+        
+        # Update spellcasting ability based on class
+        class_info = self.get_class_info()
+        if class_info['spellcasting_ability']:
+            self.spellcasting_ability = class_info['spellcasting_ability']
+    
+    def get_skill_points_per_level(self):
+        """Calculate skill points gained per level"""
+        class_info = self.get_class_info()
+        base_points = class_info['skill_points']
+        int_mod = self.get_int_modifier()
+        
+        # Minimum 1 skill point per level
+        return max(1, base_points + int_mod)
+    
+    def level_up(self, hp_roll=None):
+        """
+        Advance character to next level
+        Args:
+            hp_roll: Optional HP roll (if None, will use average)
+        Returns:
+            dict with level-up information
+        """
+        import random
+        
+        self.level += 1
+        
+        # Determine HP gain
+        class_info = self.get_class_info()
+        hit_die = class_info['hit_die']
+        
+        if hp_roll is None:
+            # Use average (half hit die + 1, rounded down)
+            hp_gain = (hit_die // 2) + 1
+        else:
+            hp_gain = max(1, hp_roll)  # Minimum 1 HP per level
+        
+        # Add CON modifier
+        hp_gain += self.get_con_modifier()
+        hp_gain = max(1, hp_gain)  # Minimum 1 HP per level even with negative CON
+        
+        self.max_hp += hp_gain
+        self.current_hp = self.max_hp  # Heal to full on level up
+        self.hit_dice.append((hit_die, hp_roll if hp_roll else hp_gain))
+        
+        # Update class-based stats
+        self.update_class_based_stats()
+        
+        # Grant skill points
+        skill_points = self.get_skill_points_per_level()
+        if self.level == 1:
+            skill_points *= 4  # First level gives 4x skill points
+        self.skill_points_available += skill_points
+        
+        # Update XP threshold for next level
+        self.next_level_xp = self.level * 1000
+        
+        return {
+            'new_level': self.level,
+            'hp_gain': hp_gain,
+            'hit_die': hit_die,
+            'skill_points': skill_points,
+            'bab': self.base_attack_bonus,
+            'fort': self.fort_base,
+            'ref': self.ref_base,
+            'will': self.will_base
+        }
+    
+    def get_melee_attack_bonus(self):
+        """Calculate melee attack bonus"""
+        return self.base_attack_bonus + self.get_str_modifier()
+    
+    def get_ranged_attack_bonus(self):
+        """Calculate ranged attack bonus"""
+        return self.base_attack_bonus + self.get_dex_modifier()
+    
+    def get_carrying_capacity(self):
+        """
+        Calculate carrying capacity based on Strength score (D&D 3e rules)
+        Returns: dict with 'light', 'medium', 'heavy', 'max' in pounds
+        """
+        str_score = self.strength + self.str_temp_mod
+        
+        # Base carrying capacity table (for Medium size creatures)
+        if str_score <= 10:
+            base_values = {1: 3, 2: 6, 3: 10, 4: 13, 5: 16, 6: 20, 7: 23, 8: 26, 9: 30, 10: 33}
+            light = base_values.get(str_score, 33)
+        elif str_score <= 20:
+            # For STR 11-20, use formula
+            base_values = {11: 38, 12: 43, 13: 50, 14: 58, 15: 66, 16: 76, 17: 86, 18: 100, 19: 116, 20: 133}
+            light = base_values.get(str_score, 133)
+        elif str_score <= 29:
+            # For STR 21-29
+            base_values = {21: 153, 22: 173, 23: 200, 24: 233, 25: 266, 26: 306, 27: 346, 28: 400, 29: 466}
+            light = base_values.get(str_score, 466)
+        else:
+            # For very high strength, use progression
+            base = 466
+            multiplier = 4
+            for s in range(30, str_score + 1):
+                if s % 10 == 0:
+                    multiplier *= 4
+                base = int(base * 1.5) if s % 5 == 0 else base
+            light = base
+        
+        # Calculate load ranges
+        medium = light * 2
+        heavy = light * 3
+        max_load = light * 3  # Maximum load = heavy load limit
+        
+        return {
+            'light': light,
+            'medium': medium,
+            'heavy': heavy,
+            'max': max_load
+        }
+    
+    def get_total_weight_carried(self):
+        """Calculate total weight of all items in inventory"""
+        total = 0
+        for item in self.inventory:
+            total += item.get('weight', 0) * item.get('quantity', 1)
+        return total
+    
+    def get_current_load(self):
+        """
+        Determine current encumbrance level
+        Returns: 'light', 'medium', 'heavy', or 'overloaded'
+        """
+        weight = self.get_total_weight_carried()
+        capacity = self.get_carrying_capacity()
+        
+        if weight <= capacity['light']:
+            return 'light'
+        elif weight <= capacity['medium']:
+            return 'medium'
+        elif weight <= capacity['heavy']:
+            return 'heavy'
+        else:
+            return 'overloaded'
+    
+    def get_encumbrance_penalties(self):
+        """
+        Get encumbrance penalties based on current load
+        Returns: dict with 'max_dex', 'check_penalty', 'speed_reduction'
+        """
+        load = self.get_current_load()
+        
+        if load == 'light':
+            return {'max_dex': None, 'check_penalty': 0, 'speed_reduction': 0}
+        elif load == 'medium':
+            return {'max_dex': 3, 'check_penalty': -3, 'speed_reduction': 10}
+        elif load == 'heavy':
+            return {'max_dex': 1, 'check_penalty': -6, 'speed_reduction': 10}
+        else:  # overloaded
+            return {'max_dex': 0, 'check_penalty': -6, 'speed_reduction': 10}
+    
+    def add_item(self, name, weight, quantity=1, notes=''):
+        """Add an item to inventory"""
+        self.inventory.append({
+            'name': name,
+            'weight': weight,
+            'quantity': quantity,
+            'notes': notes
+        })
+    
+    def remove_item(self, index):
+        """Remove an item from inventory by index"""
+        if 0 <= index < len(self.inventory):
+            self.inventory.pop(index)
+    
+    def get_spellcasting_modifier(self):
+        """Get the modifier for the spellcasting ability"""
+        if self.spellcasting_ability == 'intelligence':
+            return self.get_int_modifier()
+        elif self.spellcasting_ability == 'wisdom':
+            return self.get_wis_modifier()
+        elif self.spellcasting_ability == 'charisma':
+            return self.get_cha_modifier()
+        return 0
+    
+    def get_spell_dc(self, spell_level):
+        """Calculate spell save DC for a given spell level"""
+        return 10 + spell_level + self.get_spellcasting_modifier()
+    
+    def get_bonus_spells(self, spell_level):
+        """
+        Calculate bonus spells per day for a given spell level based on ability modifier
+        Bonus spells are granted if: ability modifier >= spell level
+        Number of bonus spells = 1 + ((ability modifier - spell level) // 4)
+        """
+        if spell_level == 0:
+            return 0  # No bonus spells for cantrips/orisons
+        
+        modifier = self.get_spellcasting_modifier()
+        
+        # Must have high enough ability score to cast spells of this level
+        # (ability score must be at least 10 + spell level)
+        if modifier < spell_level:
+            return 0
+        
+        # Calculate bonus spells: 1 + (modifier - spell_level) // 4
+        # Examples: 
+        #   1st level spell, 16 ability (+3): 1 + (3-1)//4 = 1 + 0 = 1 bonus spell
+        #   1st level spell, 18 ability (+4): 1 + (4-1)//4 = 1 + 0 = 1 bonus spell
+        #   1st level spell, 20 ability (+5): 1 + (5-1)//4 = 1 + 1 = 2 bonus spells
+        #   2nd level spell, 16 ability (+3): 1 + (3-2)//4 = 1 + 0 = 1 bonus spell
+        bonus = 1 + ((modifier - spell_level) // 4)
+        return bonus
+    
+    def get_base_spells_per_day(self, spell_level):
+        """
+        Get base spells per day for a given spell level from class progression table
+        Returns 0 if class doesn't cast spells or level is too low
+        """
+        # Check if class has spellcasting
+        if self.character_class not in SPELL_PROGRESSION:
+            return 0
+        
+        # Get progression for this class
+        class_progression = SPELL_PROGRESSION[self.character_class]
+        
+        # Check if character level is in the table
+        if self.level not in class_progression:
+            return 0
+        
+        # Get spells for this spell level
+        level_spells = class_progression[self.level]
+        return level_spells.get(spell_level, 0)
+    
+    def get_total_spells_per_day(self, spell_level):
+        """
+        Calculate total spells per day (base + bonus) for a given spell level
+        """
+        base = self.get_base_spells_per_day(spell_level)
+        
+        # Only add bonus spells if character can actually cast this spell level
+        if base > 0:
+            bonus = self.get_bonus_spells(spell_level)
+            return base + bonus
+        
+        return 0
+    
+    def update_spell_slots_from_class(self):
+        """
+        Update all spell slots based on current class, level, and ability scores
+        """
+        for spell_level in range(10):
+            self.spell_slots_max[spell_level] = self.get_total_spells_per_day(spell_level)
+    
+    def add_spell(self, name, level, school='', casting_time='', range_='', 
+                  components='', duration='', saving_throw='', spell_resistance='', 
+                  description='', prepared=False):
+        """Add a spell to the spell list"""
+        self.spells.append({
+            'name': name,
+            'level': level,
+            'school': school,
+            'casting_time': casting_time,
+            'range': range_,
+            'components': components,
+            'duration': duration,
+            'saving_throw': saving_throw,
+            'spell_resistance': spell_resistance,
+            'description': description,
+            'prepared': prepared
+        })
+    
+    def remove_spell(self, index):
+        """Remove a spell from the spell list by index"""
+        if 0 <= index < len(self.spells):
+            self.spells.pop(index)
+    
+    def reset_spell_slots(self):
+        """Reset all used spell slots to 0 (for resting)"""
+        for level in self.spell_slots_used:
+            self.spell_slots_used[level] = 0
+    
+    def add_feat(self, name, feat_type='General', description='', prerequisites='', benefit=''):
+        """Add a feat"""
+        self.feats.append({
+            'name': name,
+            'type': feat_type,
+            'description': description,
+            'prerequisites': prerequisites,
+            'benefit': benefit
+        })
+    
+    def remove_feat(self, index):
+        """Remove a feat by index"""
+        if 0 <= index < len(self.feats):
+            self.feats.pop(index)
+    
+    def add_special_ability(self, name, source='Class', description='', uses_per_day=0):
+        """Add a special ability"""
+        self.special_abilities.append({
+            'name': name,
+            'source': source,
+            'description': description,
+            'uses_per_day': uses_per_day,
+            'uses_remaining': uses_per_day
+        })
+    
+    def remove_special_ability(self, index):
+        """Remove a special ability by index"""
+        if 0 <= index < len(self.special_abilities):
+            self.special_abilities.pop(index)
+    
+    def use_special_ability(self, index):
+        """Use one charge of a special ability"""
+        if 0 <= index < len(self.special_abilities):
+            ability = self.special_abilities[index]
+            if ability['uses_remaining'] > 0:
+                ability['uses_remaining'] -= 1
+                return True
+        return False
+    
+    def reset_special_abilities(self):
+        """Reset all special ability uses (for resting)"""
+        for ability in self.special_abilities:
+            ability['uses_remaining'] = ability['uses_per_day']
+    
+    def to_dict(self):
+        """Convert character to dictionary for saving"""
+        return {
+            # Basic Info
+            'name': self.name,
+            'player': self.player,
+            'character_class': self.character_class,
+            'level': self.level,
+            'race': self.race,
+            'alignment': self.alignment,
+            'deity': self.deity,
+            'size': self.size,
+            'age': self.age,
+            'gender': self.gender,
+            'height': self.height,
+            'weight': self.weight,
+            
+            # Leveling
+            'experience': self.experience,
+            'next_level_xp': self.next_level_xp,
+            'hit_dice': self.hit_dice,
+            
+            # Ability Scores
+            'strength': self.strength,
+            'dexterity': self.dexterity,
+            'constitution': self.constitution,
+            'intelligence': self.intelligence,
+            'wisdom': self.wisdom,
+            'charisma': self.charisma,
+            
+            # Ability Score Modifiers
+            'str_temp_mod': self.str_temp_mod,
+            'dex_temp_mod': self.dex_temp_mod,
+            'con_temp_mod': self.con_temp_mod,
+            'int_temp_mod': self.int_temp_mod,
+            'wis_temp_mod': self.wis_temp_mod,
+            'cha_temp_mod': self.cha_temp_mod,
+            
+            # Hit Points
+            'max_hp': self.max_hp,
+            'current_hp': self.current_hp,
+            
+            # Skills
+            'skill_points_available': self.skill_points_available,
+            
+            # Armor Class
+            'armor_bonus': self.armor_bonus,
+            'shield_bonus': self.shield_bonus,
+            'natural_armor': self.natural_armor,
+            'deflection_bonus': self.deflection_bonus,
+            'misc_ac_bonus': self.misc_ac_bonus,
+            
+            # Saves
+            'fort_base': self.fort_base,
+            'ref_base': self.ref_base,
+            'will_base': self.will_base,
+            'fort_misc': self.fort_misc,
+            'ref_misc': self.ref_misc,
+            'will_misc': self.will_misc,
+            
+            # Combat
+            'base_attack_bonus': self.base_attack_bonus,
+            'initiative_misc': self.initiative_misc,
+            'spell_resistance': self.spell_resistance,
+            
+            # Skills
+            'skills': self.skills.copy(),
+            'skill_misc': self.skill_misc.copy(),
+            
+            # Inventory
+            'inventory': self.inventory.copy(),
+            
+            # Spellcasting
+            'spellcasting_ability': self.spellcasting_ability,
+            'spell_slots_max': self.spell_slots_max.copy(),
+            'spell_slots_used': self.spell_slots_used.copy(),
+            'spells': self.spells.copy(),
+            
+            # Feats and Special Abilities
+            'feats': self.feats.copy(),
+            'special_abilities': self.special_abilities.copy(),
+            
+            # Weapons and Magic Items
+            'weapons': self.weapons.copy(),
+            'magic_items': self.magic_items.copy()
+        }
+    
+    def from_dict(self, data):
+        """Load character from dictionary"""
+        # Basic Info
+        self.name = data.get('name', '')
+        self.player = data.get('player', '')
+        self.character_class = data.get('character_class', 'Fighter')
+        self.level = data.get('level', 1)
+        self.race = data.get('race', '')
+        self.alignment = data.get('alignment', '')
+        self.deity = data.get('deity', '')
+        self.size = data.get('size', 'Medium')
+        self.age = data.get('age', 0)
+        self.gender = data.get('gender', '')
+        self.height = data.get('height', '')
+        self.weight = data.get('weight', '')
+        
+        # Leveling
+        self.experience = data.get('experience', 0)
+        self.next_level_xp = data.get('next_level_xp', 1000)
+        self.hit_dice = data.get('hit_dice', [])
+        
+        # Ability Scores
+        self.strength = data.get('strength', 10)
+        self.dexterity = data.get('dexterity', 10)
+        self.constitution = data.get('constitution', 10)
+        self.intelligence = data.get('intelligence', 10)
+        self.wisdom = data.get('wisdom', 10)
+        self.charisma = data.get('charisma', 10)
+        
+        # Ability Score Modifiers
+        self.str_temp_mod = data.get('str_temp_mod', 0)
+        self.dex_temp_mod = data.get('dex_temp_mod', 0)
+        self.con_temp_mod = data.get('con_temp_mod', 0)
+        self.int_temp_mod = data.get('int_temp_mod', 0)
+        self.wis_temp_mod = data.get('wis_temp_mod', 0)
+        self.cha_temp_mod = data.get('cha_temp_mod', 0)
+        
+        # Hit Points
+        self.max_hp = data.get('max_hp', 0)
+        self.current_hp = data.get('current_hp', 0)
+        
+        # Skills
+        self.skill_points_available = data.get('skill_points_available', 0)
+        
+        # Armor Class
+        self.armor_bonus = data.get('armor_bonus', 0)
+        self.shield_bonus = data.get('shield_bonus', 0)
+        self.natural_armor = data.get('natural_armor', 0)
+        self.deflection_bonus = data.get('deflection_bonus', 0)
+        self.misc_ac_bonus = data.get('misc_ac_bonus', 0)
+        
+        # Saves
+        self.fort_base = data.get('fort_base', 0)
+        self.ref_base = data.get('ref_base', 0)
+        self.will_base = data.get('will_base', 0)
+        self.fort_misc = data.get('fort_misc', 0)
+        self.ref_misc = data.get('ref_misc', 0)
+        self.will_misc = data.get('will_misc', 0)
+        
+        # Combat
+        self.base_attack_bonus = data.get('base_attack_bonus', 0)
+        self.initiative_misc = data.get('initiative_misc', 0)
+        self.spell_resistance = data.get('spell_resistance', 0)
+        
+        # Skills
+        if 'skills' in data:
+            self.skills.update(data['skills'])
+        if 'skill_misc' in data:
+            self.skill_misc.update(data['skill_misc'])
+        
+        # Inventory
+        self.inventory = data.get('inventory', [])
+        
+        # Spellcasting
+        self.spellcasting_ability = data.get('spellcasting_ability', 'intelligence')
+        if 'spell_slots_max' in data:
+            self.spell_slots_max.update(data['spell_slots_max'])
+        if 'spell_slots_used' in data:
+            self.spell_slots_used.update(data['spell_slots_used'])
+        self.spells = data.get('spells', [])
+        
+        # Feats and Special Abilities
+        self.feats = data.get('feats', [])
+        self.special_abilities = data.get('special_abilities', [])
+        
+        # Weapons and Magic Items
+        self.weapons = data.get('weapons', [])
+        self.magic_items = data.get('magic_items', [])
