@@ -7,49 +7,22 @@
   "alignment": "Chaotic Good",
   "deity": "",
   "size": "Medium",
-  "age": 0,
-  "gender": "",
-  "height": "",
-  "weight": "",
+  "age": 18,
+  "gender": "Female",
+  "height": "5' 6\"",
+  "weight": "130 lbs",
   "experience": 0,
   "next_level_xp": 10000,
   "hit_dice": [
-    [
-      4,
-      4
-    ],
-    [
-      4,
-      4
-    ],
-    [
-      4,
-      4
-    ],
-    [
-      4,
-      4
-    ],
-    [
-      4,
-      4
-    ],
-    [
-      4,
-      4
-    ],
-    [
-      4,
-      4
-    ],
-    [
-      4,
-      4
-    ],
-    [
-      4,
-      4
-    ]
+    [4, 4],
+    [4, 4],
+    [4, 4],
+    [4, 4],
+    [4, 4],
+    [4, 4],
+    [4, 4],
+    [4, 4],
+    [4, 4]
   ],
   "strength": 14,
   "dexterity": 20,
