@@ -301,6 +301,8 @@ class Character:
         self.gender = ""
         self.height = ""
         self.weight = ""
+        self.hair_color = ""
+        self.eye_color = ""
         
         # Multiclass support
         self.classes = [{'name': 'Fighter', 'level': 1}]  # List of {'name': str, 'level': int}
@@ -353,6 +355,8 @@ class Character:
         # Skills (only storing ranks, modifiers calculated)
         self.skill_points_available = 0  # Unspent skill points
         self.skills = {
+            'Alchemy': 0,
+            'Animal Empathy': 0,
             'Appraise': 0,
             'Balance': 0,
             'Bluff': 0,
@@ -377,6 +381,8 @@ class Character:
             'Knowledge (Nature)': 0,
             'Knowledge (Planes)': 0,
             'Knowledge (Engineering)': 0,
+            'Knowledge (Nobility & Royalty)': 0,
+            'Knowledge (___________)': 0,
             'Listen': 0,
             'Move Silently': 0,
             'Open Lock': 0,
@@ -398,6 +404,8 @@ class Character:
         
         # Skill ability mapping (which ability score affects each skill)
         self.skill_abilities = {
+            'Alchemy': 'int',
+            'Animal Empathy': 'cha',
             'Appraise': 'int',
             'Balance': 'dex',
             'Bluff': 'cha',
@@ -422,6 +430,8 @@ class Character:
             'Knowledge (Nature)': 'int',
             'Knowledge (Planes)': 'int',
             'Knowledge (Engineering)': 'int',
+            'Knowledge (Nobility & Royalty)': 'int',
+            'Knowledge (___________)': 'int',
             'Listen': 'wis',
             'Move Silently': 'dex',
             'Open Lock': 'dex',
@@ -1127,6 +1137,8 @@ class Character:
             'gender': self.gender,
             'height': self.height,
             'weight': self.weight,
+            'hair_color': self.hair_color,
+            'eye_color': self.eye_color,
             
             # Multiclass
             'classes': self.classes.copy() if hasattr(self, 'classes') else [{'name': primary_class, 'level': self.level}],
@@ -1223,6 +1235,8 @@ class Character:
         self.gender = data.get('gender', '')
         self.height = data.get('height', '')
         self.weight = data.get('weight', '')
+        self.hair_color = data.get('hair_color', '')
+        self.eye_color = data.get('eye_color', '')
         
         # Multiclass - backward compatibility with old save files
         if 'classes' in data:
