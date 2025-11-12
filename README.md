@@ -10,9 +10,12 @@ An interactive character sheet application for Dungeons & Dragons 3rd Edition th
   - Wizard (Intelligence-based caster)
   - Sorcerer, Bard (Charisma-based casters)
   - Monk, Rogue (skill specialists)
-- **Prestige class support**: 31 prestige classes with automatic requirement checking
-  - 12 Core D&D prestige classes: Arcane Archer, Arcane Trickster, Assassin, Blackguard, Dragon Disciple, Duelist, Dwarven Defender, Eldritch Knight, Horizon Walker, Loremaster, Mystic Theurge, Shadowdancer
+- **Prestige class support**: 70 prestige classes with automatic requirement checking
+  - 11 Core DMG prestige classes: Arcane Archer, Arcane Trickster, Assassin, Blackguard, Dragon Disciple, Duelist, Dwarven Defender, Eldritch Knight, Horizon Walker, Loremaster, Mystic Theurge, Shadowdancer
   - 19 Magic of Faerûn prestige classes: Harper Scout, Spellsword, Red Wizard, Guild Thief, Shadow Adept, and 14 more!
+  - 12 Tome and Blood prestige classes: Bladesinger, Pale Master, Alienist, Blood Magus, Geomancer, and 7 more!
+  - 14 Sword and Fist prestige classes: Cavalier, Kensai, Drunken Master, Frenzied Berserker, and 10 more!
+  - 14 Song and Silence prestige classes: Battle Dancer, Master of Masks, Lyric Thaumaturge, Thief-Acrobat, and 10 more!
   - Requirements displayed when adding prestige classes
   - Validates race, alignment, BAB, skills, and other prerequisites
   - Full integration with multiclass system
@@ -517,6 +520,8 @@ All 11 D&D 3e core classes are supported with accurate progressions:
 
 ## Available Prestige Classes
 
+### Core DMG (12 classes)
+
 1. **Arcane Archer**: Elf/half-elf archer-mage (requires BAB +6, arcane spells)
 2. **Arcane Trickster**: Rogue-wizard hybrid (requires sneak attack, 3rd-level arcane)
 3. **Assassin**: Evil death dealer (requires evil alignment, Hide 8, Move Silently 8)
@@ -530,6 +535,78 @@ All 11 D&D 3e core classes are supported with accurate progressions:
 11. **Mystic Theurge**: Dual caster (requires 2nd-level divine AND arcane spells)
 12. **Shadowdancer**: Shadow manipulator (requires Hide 10, Move Silently 8, Perform (dance) 5)
 
+### Magic of Faerûn (19 classes)
+
+13. **Harper Scout**: Secret agent for balance
+14. **Spellsword**: Weapon-channeling spellcaster
+15. **Red Wizard**: Thayan school specialist
+16. **Guild Thief**: Professional criminal network member
+17. **Shadow Adept**: Shadow Weave spellcaster
+18. **Arcane Devotee**: Divine caster of magic deities
+19. **Divine Champion**: Deity's chosen warrior
+20. **Divine Disciple**: Faith-empowered cleric
+21. **Harper Priest**: Divine Harper agent
+22. **Runecaster**: Dwarven rune priest
+23. **Silverstar**: Selûne's holy warrior
+24. **Hospitaler**: Divine healer
+25. **Incantatrix**: Female metamagic specialist
+26. **Acolyte of the Ego**: Psionic self-enhancer
+27. **Acolyte of the Skin**: Demon-skin warrior
+28. **Shaaryan Hunter**: Grasslands tracker
+29. **Monk of the Long Death**: Death-studying monk
+30. **Zhentarim Soldier**: Elite mercenary
+31. **Zhentarim Spy**: Covert intelligence agent
+
+### Tome and Blood (12 classes)
+
+32. **Abjurer**: Protective magic specialist
+33. **Alienist**: Far Realm summoner
+34. **Bladesinger**: Elven warrior-mage
+35. **Blood Magus**: Life-force powered caster
+36. **Candle Caster**: Magical candle crafter
+37. **Geomancer**: Terrain-based divine caster
+38. **Master Transmogrifist**: Shapeshifting master
+39. **Pale Master**: Undeath-embracing necromancer
+40. **Ruathar**: Elven divine cavalry
+41. **Seeker of the Song**: Primal song mage
+42. **Void Disciple**: Oblivion priest
+43. **Waverider**: Water magic sailor
+
+### Sword and Fist (14 classes)
+
+44. **Cavalier**: Elite mounted warrior
+45. **Darkwood Stalker**: Elven forest defender
+46. **Drunken Master**: Unpredictable monk
+47. **Exotic Weapon Master**: Exotic weapon specialist
+48. **Frenzied Berserker**: Supernatural rage warrior
+49. **Gladiator**: Arena combatant
+50. **Ironguard**: Dwarven tough defender
+51. **Kensai**: Single-weapon master
+52. **Monk of the Enabled Hand**: Healing monk
+53. **Ravager**: Destructive barbarian
+54. **Reaping Mauler**: Grappling specialist
+55. **Stonelord**: Earth-bonded dwarf warrior
+56. **War Chanter**: Battlefield song leader
+57. **Wildrunner**: Tireless elven runner
+
+### Song and Silence (14 classes)
+
+58. **Battle Dancer**: Combat dancing bard
+59. **Fochlucan Lyrist**: Druid-bard hybrid
+60. **Harper Agent**: Elite secret agent
+61. **Lyric Thaumaturge**: Music-spell combiner
+62. **Master of Masks**: Magical disguise master
+63. **Metalsmith**: Superior craftsmaster
+64. **Nameless One**: Identity-erased rogue
+65. **Justiciar**: Lawful enforcer
+66. **Master Specialist**: Ultimate school wizard
+67. **Virtuoso**: Multi-performance master
+68. **Vigilante**: Urban justice warrior
+69. **Fortune's Friend**: Luck-blessed rogue
+70. **Thief-Acrobat**: Athletic rogue
+
+**Total: 70 prestige classes from 5 sourcebooks**
+
 ## License
 
 Free to use for personal D&D games!
@@ -539,8 +616,7 @@ Free to use for personal D&D games!
 Possible additions:
 
 - Multiple characters (character manager)
-- Expand the number of Prestige classes available
-- Character advancement/leveling
+- Character advancement/leveling improvements
 - Export to PDF
 - Character portrait/image support
 - Dice roller integration
