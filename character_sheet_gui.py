@@ -2313,7 +2313,7 @@ class CharacterSheetGUI:
         
         # ===== FEATS SECTION =====
         feats_container = ttk.LabelFrame(paned, text="Feats", padding=10)
-        paned.add(feats_container, weight=1)
+        paned.add(feats_container, weight=3)  # Give more space to feats section
         
         # Add feat controls
         add_feat_frame = ttk.Frame(feats_container)
@@ -2358,7 +2358,7 @@ class CharacterSheetGUI:
         
         columns = ('name', 'type', 'prerequisites', 'benefit')
         self.feats_tree = ttk.Treeview(feats_list_frame, columns=columns, show='headings', 
-                                       yscrollcommand=feats_scroll.set, height=12)
+                                       yscrollcommand=feats_scroll.set, height=6)
         
         self.feats_tree.heading('name', text='Feat Name')
         self.feats_tree.heading('type', text='Type')
@@ -2380,12 +2380,12 @@ class CharacterSheetGUI:
         remove_feat_btn = ttk.Button(feat_btn_frame, text="Remove Selected Feat", command=self.remove_feat)
         remove_feat_btn.pack(side='left', padx=2)
         
-        epic_feats_btn = ttk.Button(feat_btn_frame, text="Epic Feats (21+)", command=self.show_epic_feats_dialog)
+        epic_feats_btn = ttk.Button(feat_btn_frame, text="Epic Feats", command=self.show_epic_feats_dialog)
         epic_feats_btn.pack(side='left', padx=2)
         
         # ===== SPECIAL ABILITIES SECTION =====
         abilities_container = ttk.LabelFrame(paned, text="Special Abilities", padding=10)
-        paned.add(abilities_container, weight=1)
+        paned.add(abilities_container, weight=2)  # Less space for abilities section
         
         # Add ability controls
         add_ability_frame = ttk.Frame(abilities_container)
@@ -2502,13 +2502,7 @@ class CharacterSheetGUI:
     
     def show_epic_feats_dialog(self):
         """Show dialog for managing epic feats"""
-        # Check if character is epic level
-        if not self.character.is_epic_level():
-            messagebox.showinfo("Not Epic Level", 
-                              "Your character must be level 21 or higher to select epic feats.\n\n"
-                              f"Current Level: {self.character.get_total_level()}\n"
-                              "Epic levels begin at 21st level.")
-            return
+        # Removed level restriction - individual feat prerequisites will determine eligibility
         
         dialog = tk.Toplevel(self.root)
         dialog.title("Epic Feats")
@@ -2517,18 +2511,16 @@ class CharacterSheetGUI:
         dialog.grab_set()
         
         # Epic level info at top
-        info_frame = ttk.LabelFrame(dialog, text="Epic Level Information", padding=10)
+        info_frame = ttk.LabelFrame(dialog, text="Character Information", padding=10)
         info_frame.pack(fill='x', padx=10, pady=10)
         
-        epic_info = self.character.get_epic_info()
         total_level = self.character.get_total_level()
         
-        info_text = f"Total Level: {total_level} (Epic Level {epic_info['epic_level']})\n"
-        info_text += f"Epic Feats Available: {epic_info['epic_feats']}\n"
-        info_text += f"Epic Feats Selected: {len(self.character.epic_feats)}\n"
-        info_text += f"Next Epic Feat at Level: {epic_info['next_epic_feat_level']}\n"
-        info_text += f"Epic Ability Increases: {epic_info['epic_ability_increases']}\n"
-        info_text += f"Next Ability Increase at Level: {epic_info['next_ability_increase_level']}"
+        # Simplified info display - no feat count tracking
+        info_text = f"Total Level: {total_level}\n"
+        info_text += f"Epic Feats Selected: {len(self.character.epic_feats)}\n\n"
+        info_text += "Epic feats are available to any character who meets the individual feat prerequisites.\n"
+        info_text += "Prerequisites may include minimum level, ability scores, BAB, skills, or other feats."
         
         info_label = ttk.Label(info_frame, text=info_text, justify='left', font=('Arial', 10))
         info_label.pack(anchor='w')
@@ -2633,14 +2625,7 @@ class CharacterSheetGUI:
                                          "This feat cannot be taken multiple times.")
                     return
             
-            # Check if character has enough epic feats available
-            if len(self.character.epic_feats) >= epic_info['epic_feats']:
-                messagebox.showwarning("No Epic Feats Available",
-                                     f"You have already selected {len(self.character.epic_feats)} epic feats.\n"
-                                     f"You can have up to {epic_info['epic_feats']} epic feats at your level.\n"
-                                     f"You'll gain another epic feat at level {epic_info['next_epic_feat_level']}.")
-                return
-            
+            # No feat count restriction - only individual feat prerequisites matter
             self.character.add_epic_feat(selected)
             refresh_current_feats()
             self.mark_modified()
