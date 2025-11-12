@@ -1,6 +1,6 @@
 # D&D 3rd Edition Character Sheet
 
-An interactive character sheet application for Dungeons & Dragons 3rd Edition that automatically updates all derived statistics when you change base values.
+An interactive character sheet application for Dungeons & Dragons 3rd Edition that automatically updates all derived statistics when you change base values. Includes **full Epic Level Handbook support** for characters level 21+!
 
 ## Features
 
@@ -10,24 +10,41 @@ An interactive character sheet application for Dungeons & Dragons 3rd Edition th
   - Wizard (Intelligence-based caster)
   - Sorcerer, Bard (Charisma-based casters)
   - Monk, Rogue (skill specialists)
-- **Prestige class support**: 12 prestige classes with automatic requirement checking
-  - Arcane Archer, Arcane Trickster, Assassin, Blackguard
-  - Dragon Disciple, Duelist, Dwarven Defender, Eldritch Knight
-  - Horizon Walker, Loremaster, Mystic Theurge, Shadowdancer
+- **Prestige class support**: 31 prestige classes with automatic requirement checking
+  - 12 Core D&D prestige classes: Arcane Archer, Arcane Trickster, Assassin, Blackguard, Dragon Disciple, Duelist, Dwarven Defender, Eldritch Knight, Horizon Walker, Loremaster, Mystic Theurge, Shadowdancer
+  - 19 Magic of Faerûn prestige classes: Harper Scout, Spellsword, Red Wizard, Guild Thief, Shadow Adept, and 14 more!
   - Requirements displayed when adding prestige classes
   - Validates race, alignment, BAB, skills, and other prerequisites
   - Full integration with multiclass system
+- **Epic Level Handbook support** (Level 21+): Full implementation of epic level rules
+  - **Epic BAB and Saves**: Continues progression beyond 20th level
+    - Full BAB: +1 per level
+    - Medium BAB: +1 every 2 levels
+    - Poor BAB: +1 every 2 levels
+    - Good saves: +1 every 2 levels
+    - Poor saves: +1 every 3 levels
+  - **Epic Feats**: Gain epic feats at 21st level, then every 2 levels
+    - 53 epic feats defined with full prerequisites
+    - Epic Prowess, Epic Toughness, Epic Weapon Focus/Specialization
+    - Great Ability Score increases (Strength, Dexterity, etc.)
+    - Epic Spellcasting, Improved Combat Reflexes, and more
+    - Epic feat selection dialog with descriptions
+  - **Epic Ability Increases**: +1 to any ability score every 4 levels (24, 28, 32...)
+  - **Epic XP Progression**: Proper XP requirements for epic levels
+  - **Works with multiclass**: All epic progressions work with multiclass characters
 - **Multiclass support**: Take levels in multiple classes with proper D&D 3e stacking rules
-  - BAB stacks from all classes based on their progressions
-  - Saving throws stack from all classes based on their progressions
+  - BAB stacks from all classes based on their progressions (including epic levels)
+  - Saving throws stack from all classes based on their progressions (including epic levels)
   - Track individual class levels separately
   - Choose which class to level when gaining levels
-  - Mix base classes and prestige classes freely
+  - Mix base classes, prestige classes, and epic levels freely
 - **Character advancement**: Level up with automatic BAB, save, HP, and skill point calculations
+  - Level up dialog shows epic feat and ability increase notifications
+  - Automatic detection when reaching epic level (21+)
 - **Auto-calculating stats**: Change your stat score and watch your saves update automatically
 - **Complete character tracking**:
   - All six ability scores (STR, DEX, CON, INT, WIS, CHA)
-  - Saving throws (Fortitude, Reflex, Will) - auto-calculated from class
+  - Saving throws (Fortitude, Reflex, Will) - auto-calculated from class (including epic bonuses)
   - Base Attack Bonus - auto-calculated from class and level
   - Armor Class (including touch and flat-footed)
   - Combat stats (Initiative, Attack bonuses)
@@ -172,6 +189,20 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
 - **Feats Section**: Add feats with name, type, prerequisites, and benefit
   - Types: General, Metamagic, Item Creation, Combat, Skill, Special
   - Full text descriptions for benefits
+- **Epic Feats Button** (Level 21+): Access epic feats for epic level characters
+  - **Epic Feat Selection**: Choose from 53 epic feats
+    - Epic Prowess (+1 to all attacks)
+    - Epic Toughness (+30 HP, can take multiple times)
+    - Epic Weapon Focus/Specialization (enhanced weapon bonuses)
+    - Great Strength/Dexterity/etc. (+1 to ability scores)
+    - Epic Spellcasting (cast epic spells)
+    - Improved Combat Reflexes, Epic Dodge, and many more!
+  - **Feat Progression**: Gain epic feats at 21st level, then every 2 levels (23, 25, 27...)
+  - **Full Descriptions**: Each epic feat shows prerequisites, benefits, and special notes
+  - **Prerequisite Validation**: System checks BAB, ability scores, and other requirements
+  - **Multiple Selection**: Some epic feats can be taken multiple times (e.g., Epic Toughness, Great Strength)
+  - **Epic Level Info**: Shows current epic level, feats available, and next milestone levels
+  - Button only available when character reaches level 21 (epic level)
 - **Special Abilities Section**: Track class features, racial abilities, etc.
   - Track uses per day (or mark as at-will with 0)
   - Use ability button to decrement remaining uses
@@ -508,6 +539,7 @@ Free to use for personal D&D games!
 Possible additions:
 
 - Multiple characters (character manager)
+- Expand the number of Prestige classes available
 - Character advancement/leveling
 - Export to PDF
 - Character portrait/image support

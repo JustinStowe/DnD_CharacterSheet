@@ -9,6 +9,17 @@ from prestige_classes import (
     get_prestige_class_info,
     is_prestige_class
 )
+from epic_levels import (
+    is_epic_level,
+    get_epic_level_info,
+    get_epic_bab_bonus,
+    get_epic_save_bonus,
+    calculate_epic_skill_max_ranks,
+    get_epic_xp_for_level,
+    get_epic_feat_progression,
+    get_all_epic_feats,
+    check_epic_feat_prerequisites
+)
 
 # D&D 3e Class definitions
 CLASS_DEFINITIONS = {
@@ -528,6 +539,17 @@ class Character:
         #   'max_charges': int
         # }
         
+        # Epic Level Tracking
+        self.epic_feats = []  # List of epic feat names
+        self.epic_ability_increases = {  # Track which abilities have been increased at epic levels
+            'strength': 0,
+            'dexterity': 0,
+            'constitution': 0,
+            'intelligence': 0,
+            'wisdom': 0,
+            'charisma': 0
+        }
+        
     def get_ability_modifier(self, ability_score):
         """Calculate ability modifier from score"""
         return (ability_score - 10) // 2
@@ -663,7 +685,7 @@ class Character:
         return check_prestige_class_requirements(self, prestige_class_name)
     
     def get_base_attack_bonus_from_class(self):
-        """Calculate BAB based on all classes (multiclass stacking, including prestige)"""
+        """Calculate BAB based on all classes (multiclass stacking, including prestige and epic levels)"""
         total_bab = 0
         for class_entry in self.classes:
             class_name = class_entry['name']
@@ -673,17 +695,25 @@ class Character:
             class_info = self.get_class_info(class_name)
             progression = class_info['bab_progression']
             
+            # Calculate BAB for levels 1-20
+            standard_level = min(class_level, 20)
+            
             if progression == 'full':
-                total_bab += class_level
+                total_bab += standard_level
             elif progression == 'medium':
-                total_bab += (class_level * 3) // 4
+                total_bab += (standard_level * 3) // 4
             else:  # poor
-                total_bab += class_level // 2
+                total_bab += standard_level // 2
+            
+            # Add epic BAB for levels 21+
+            if class_level > 20:
+                epic_levels = class_level - 20
+                total_bab += get_epic_bab_bonus(class_name, epic_levels)
         
         return total_bab
     
     def get_base_save_from_class(self, save_type):
-        """Calculate base save bonus from all classes (multiclass stacking, including prestige)
+        """Calculate base save bonus from all classes (multiclass stacking, including prestige and epic levels)
         Args:
             save_type: 'fort', 'ref', or 'will'
         """
@@ -697,10 +727,18 @@ class Character:
             progression_key = f'{save_type}_progression'
             progression = class_info[progression_key]
             
+            # Calculate saves for levels 1-20
+            standard_level = min(class_level, 20)
+            
             if progression == 'good':
-                total_save += 2 + (class_level // 2)
+                total_save += 2 + (standard_level // 2)
             else:  # poor
-                total_save += class_level // 3
+                total_save += standard_level // 3
+            
+            # Add epic save bonus for levels 21+
+            if class_level > 20:
+                epic_levels = class_level - 20
+                total_save += get_epic_save_bonus(progression, epic_levels)
         
         return total_save
     
@@ -1123,7 +1161,14 @@ class Character:
             
             # Weapons and Magic Items
             'weapons': self.weapons.copy(),
-            'magic_items': self.magic_items.copy()
+            'magic_items': self.magic_items.copy(),
+            
+            # Epic Level Data
+            'epic_feats': self.epic_feats.copy() if hasattr(self, 'epic_feats') else [],
+            'epic_ability_increases': self.epic_ability_increases.copy() if hasattr(self, 'epic_ability_increases') else {
+                'strength': 0, 'dexterity': 0, 'constitution': 0,
+                'intelligence': 0, 'wisdom': 0, 'charisma': 0
+            }
         }
     
     def from_dict(self, data):
@@ -1221,3 +1266,63 @@ class Character:
         # Weapons and Magic Items
         self.weapons = data.get('weapons', [])
         self.magic_items = data.get('magic_items', [])
+        
+        # Epic Level Data
+        self.epic_feats = data.get('epic_feats', [])
+        self.epic_ability_increases = data.get('epic_ability_increases', {
+            'strength': 0, 'dexterity': 0, 'constitution': 0,
+            'intelligence': 0, 'wisdom': 0, 'charisma': 0
+        })
+    
+    # ===== EPIC LEVEL METHODS =====
+    
+    def is_epic_level(self):
+        """Check if character is at epic level (21+)"""
+        return is_epic_level(self.get_total_level())
+    
+    def get_epic_info(self):
+        """Get comprehensive epic level information"""
+        return get_epic_level_info(self.get_total_level())
+    
+    def get_max_skill_ranks(self):
+        """Get maximum skill ranks (level + 3, works for epic levels too)"""
+        return calculate_epic_skill_max_ranks(self.get_total_level())
+    
+    def get_epic_feats_available(self):
+        """Get number of epic feats character should have at current level"""
+        return get_epic_feat_progression(self.get_total_level())
+    
+    def add_epic_feat(self, feat_name):
+        """Add an epic feat to the character"""
+        if feat_name not in self.epic_feats:
+            self.epic_feats.append(feat_name)
+    
+    def remove_epic_feat(self, feat_name):
+        """Remove an epic feat from the character"""
+        if feat_name in self.epic_feats:
+            self.epic_feats.remove(feat_name)
+    
+    def check_epic_feat_requirements(self, feat_name):
+        """Check if character meets epic feat prerequisites"""
+        return check_epic_feat_prerequisites(feat_name, self)
+    
+    def get_all_epic_feats_list(self):
+        """Get list of all available epic feats"""
+        return get_all_epic_feats()
+    
+    def apply_epic_ability_increase(self, ability_name):
+        """Apply an epic ability score increase"""
+        if ability_name in self.epic_ability_increases:
+            self.epic_ability_increases[ability_name] += 1
+            # Actually increase the ability score
+            current_score = getattr(self, ability_name)
+            setattr(self, ability_name, current_score + 1)
+    
+    def update_xp_for_epic_level(self):
+        """Update XP requirement for next level (handles epic levels)"""
+        current_level = self.get_total_level()
+        if current_level >= 20:
+            self.next_level_xp = get_epic_xp_for_level(current_level + 1)
+        else:
+            self.next_level_xp = (current_level + 1) * 1000
+

@@ -13,6 +13,12 @@ from prestige_classes import (
     get_all_prestige_classes,
     is_prestige_class
 )
+from epic_levels import (
+    EPIC_FEATS,
+    get_epic_level_info,
+    get_epic_level_description,
+    get_all_epic_feats
+)
 
 
 class CharacterSheetGUI:
@@ -1413,7 +1419,7 @@ class CharacterSheetGUI:
             # Update XP requirement
             new_level = self.character.get_total_level()
             self.character.level = new_level
-            self.character.next_level_xp = new_level * 1000
+            self.character.update_xp_for_epic_level()  # Use epic XP calculation if needed
             
             # Update GUI
             self.update_class_display()
@@ -1433,13 +1439,39 @@ class CharacterSheetGUI:
             self.update_all_calculated_fields()
             self.mark_modified()
             
-            messagebox.showinfo("Level Up!", 
-                              f"Congratulations! {selected_class} level increased!\n\n"
-                              f"Total Level: {new_level}\n"
-                              f"HP gained: +{hp_gain}\n"
-                              f"Skill points: +{skill_points}\n"
-                              f"BAB: +{self.character.base_attack_bonus}\n"
-                              f"Saves - Fort: +{self.character.fort_base}, Ref: +{self.character.ref_base}, Will: +{self.character.will_base}")
+            # Build level up message
+            level_up_msg = f"Congratulations! {selected_class} level increased!\n\n"
+            level_up_msg += f"Total Level: {new_level}\n"
+            level_up_msg += f"HP gained: +{hp_gain}\n"
+            level_up_msg += f"Skill points: +{skill_points}\n"
+            level_up_msg += f"BAB: +{self.character.base_attack_bonus}\n"
+            level_up_msg += f"Saves - Fort: +{self.character.fort_base}, Ref: +{self.character.ref_base}, Will: +{self.character.will_base}\n"
+            
+            # Add epic level notifications
+            if self.character.is_epic_level():
+                epic_info = self.character.get_epic_info()
+                level_up_msg += f"\n🌟 EPIC LEVEL {epic_info['epic_level']}! 🌟\n"
+                
+                # Check if gained epic feat this level
+                if new_level == 21:
+                    level_up_msg += "\n✨ You've reached EPIC LEVEL!\n"
+                    level_up_msg += "• You can now select your first Epic Feat!\n"
+                    level_up_msg += "• Visit the Feats tab to choose Epic Feats\n"
+                elif (new_level - 21) % 2 == 0:  # Epic feat at 21, then every 2 levels
+                    level_up_msg += f"\n✨ Epic Feat available!\n"
+                    level_up_msg += f"• You can select a new Epic Feat (Total: {epic_info['epic_feats']})\n"
+                    level_up_msg += "• Visit the Feats tab to choose Epic Feats\n"
+                
+                # Check if gained ability increase
+                if (new_level - 20) % 4 == 0 and new_level > 20:  # Every 4 levels starting at 24
+                    level_up_msg += f"\n📈 Ability Score Increase!\n"
+                    level_up_msg += "• You can increase any ability score by +1\n"
+                    level_up_msg += "• Edit your ability scores on the Main tab\n"
+            elif new_level == 20:
+                level_up_msg += "\n⚠️ One more level until EPIC LEVEL!\n"
+                level_up_msg += "At level 21, you'll gain access to Epic Feats!\n"
+            
+            messagebox.showinfo("Level Up!", level_up_msg)
             dialog.destroy()
         
         ttk.Button(button_frame, text="Level Up!", command=do_level_up).pack(side='left', padx=5)
@@ -2119,9 +2151,15 @@ class CharacterSheetGUI:
         self.feats_tree.pack(side='left', fill='both', expand=True)
         feats_scroll.config(command=self.feats_tree.yview)
         
-        # Remove feat button
-        remove_feat_btn = ttk.Button(feats_container, text="Remove Selected Feat", command=self.remove_feat)
-        remove_feat_btn.pack(pady=5)
+        # Feat action buttons
+        feat_btn_frame = ttk.Frame(feats_container)
+        feat_btn_frame.pack(fill='x', pady=5)
+        
+        remove_feat_btn = ttk.Button(feat_btn_frame, text="Remove Selected Feat", command=self.remove_feat)
+        remove_feat_btn.pack(side='left', padx=2)
+        
+        epic_feats_btn = ttk.Button(feat_btn_frame, text="Epic Feats (21+)", command=self.show_epic_feats_dialog)
+        epic_feats_btn.pack(side='left', padx=2)
         
         # ===== SPECIAL ABILITIES SECTION =====
         abilities_container = ttk.LabelFrame(paned, text="Special Abilities", padding=10)
@@ -2239,6 +2277,159 @@ class CharacterSheetGUI:
         self.character.remove_feat(index)
         self.update_feats_display()
         self.mark_modified()
+    
+    def show_epic_feats_dialog(self):
+        """Show dialog for managing epic feats"""
+        # Check if character is epic level
+        if not self.character.is_epic_level():
+            messagebox.showinfo("Not Epic Level", 
+                              "Your character must be level 21 or higher to select epic feats.\n\n"
+                              f"Current Level: {self.character.get_total_level()}\n"
+                              "Epic levels begin at 21st level.")
+            return
+        
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Epic Feats")
+        dialog.geometry("800x600")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Epic level info at top
+        info_frame = ttk.LabelFrame(dialog, text="Epic Level Information", padding=10)
+        info_frame.pack(fill='x', padx=10, pady=10)
+        
+        epic_info = self.character.get_epic_info()
+        total_level = self.character.get_total_level()
+        
+        info_text = f"Total Level: {total_level} (Epic Level {epic_info['epic_level']})\n"
+        info_text += f"Epic Feats Available: {epic_info['epic_feats']}\n"
+        info_text += f"Epic Feats Selected: {len(self.character.epic_feats)}\n"
+        info_text += f"Next Epic Feat at Level: {epic_info['next_epic_feat_level']}\n"
+        info_text += f"Epic Ability Increases: {epic_info['epic_ability_increases']}\n"
+        info_text += f"Next Ability Increase at Level: {epic_info['next_ability_increase_level']}"
+        
+        info_label = ttk.Label(info_frame, text=info_text, justify='left', font=('Arial', 10))
+        info_label.pack(anchor='w')
+        
+        # Current epic feats
+        current_frame = ttk.LabelFrame(dialog, text="Current Epic Feats", padding=10)
+        current_frame.pack(fill='both', expand=True, padx=10, pady=5)
+        
+        current_list = tk.Listbox(current_frame, height=6)
+        current_list.pack(fill='both', expand=True)
+        
+        def refresh_current_feats():
+            current_list.delete(0, tk.END)
+            for feat in self.character.epic_feats:
+                current_list.insert(tk.END, feat)
+        
+        refresh_current_feats()
+        
+        # Remove epic feat button
+        remove_btn = ttk.Button(current_frame, text="Remove Selected Epic Feat",
+                               command=lambda: remove_epic_feat())
+        remove_btn.pack(pady=5)
+        
+        def remove_epic_feat():
+            selection = current_list.curselection()
+            if selection:
+                feat_name = current_list.get(selection[0])
+                self.character.remove_epic_feat(feat_name)
+                refresh_current_feats()
+                self.mark_modified()
+        
+        # Available epic feats
+        available_frame = ttk.LabelFrame(dialog, text="Available Epic Feats", padding=10)
+        available_frame.pack(fill='both', expand=True, padx=10, pady=5)
+        
+        # Selection frame
+        select_frame = ttk.Frame(available_frame)
+        select_frame.pack(fill='x', pady=5)
+        
+        ttk.Label(select_frame, text="Select Epic Feat:").pack(side='left', padx=5)
+        
+        epic_feat_var = tk.StringVar()
+        all_epic_feats = self.character.get_all_epic_feats_list()
+        epic_feat_combo = ttk.Combobox(select_frame, textvariable=epic_feat_var,
+                                      values=all_epic_feats, state='readonly', width=40)
+        epic_feat_combo.pack(side='left', padx=5, fill='x', expand=True)
+        if all_epic_feats:
+            epic_feat_combo.current(0)
+        
+        # Description frame
+        desc_frame = ttk.Frame(available_frame)
+        desc_frame.pack(fill='both', expand=True)
+        
+        desc_text = tk.Text(desc_frame, height=10, width=70, wrap='word', state='disabled')
+        desc_scroll = ttk.Scrollbar(desc_frame, command=desc_text.yview)
+        desc_text.config(yscrollcommand=desc_scroll.set)
+        desc_text.pack(side='left', fill='both', expand=True)
+        desc_scroll.pack(side='right', fill='y')
+        
+        def update_description(*args):
+            selected = epic_feat_var.get()
+            if not selected:
+                return
+            
+            feat_info = EPIC_FEATS.get(selected, {})
+            
+            desc_text.config(state='normal')
+            desc_text.delete('1.0', tk.END)
+            
+            desc_text.insert(tk.END, f"{selected}\n\n", 'title')
+            desc_text.insert(tk.END, f"Type: {feat_info.get('type', 'Epic')}\n\n", 'bold')
+            desc_text.insert(tk.END, f"Prerequisites: {feat_info.get('prerequisites', 'None')}\n\n")
+            desc_text.insert(tk.END, f"Benefit: {feat_info.get('benefit', '')}\n\n")
+            if feat_info.get('special'):
+                desc_text.insert(tk.END, f"Special: {feat_info.get('special', '')}\n", 'special')
+            
+            desc_text.tag_config('title', font=('Arial', 12, 'bold'))
+            desc_text.tag_config('bold', font=('Arial', 10, 'bold'))
+            desc_text.tag_config('special', font=('Arial', 9, 'italic'))
+            
+            desc_text.config(state='disabled')
+        
+        epic_feat_combo.bind('<<ComboboxSelected>>', update_description)
+        update_description()
+        
+        # Add button
+        def add_epic_feat():
+            selected = epic_feat_var.get()
+            if not selected:
+                messagebox.showwarning("No Selection", "Please select an epic feat.")
+                return
+            
+            # Check if already have this feat (for feats that can't be taken multiple times)
+            if selected in self.character.epic_feats:
+                feat_info = EPIC_FEATS.get(selected, {})
+                if feat_info.get('special') and 'multiple times' in feat_info['special'].lower():
+                    # Can take multiple times
+                    pass
+                else:
+                    messagebox.showwarning("Already Selected",
+                                         f"You already have {selected}.\n"
+                                         "This feat cannot be taken multiple times.")
+                    return
+            
+            # Check if character has enough epic feats available
+            if len(self.character.epic_feats) >= epic_info['epic_feats']:
+                messagebox.showwarning("No Epic Feats Available",
+                                     f"You have already selected {len(self.character.epic_feats)} epic feats.\n"
+                                     f"You can have up to {epic_info['epic_feats']} epic feats at your level.\n"
+                                     f"You'll gain another epic feat at level {epic_info['next_epic_feat_level']}.")
+                return
+            
+            self.character.add_epic_feat(selected)
+            refresh_current_feats()
+            self.mark_modified()
+            messagebox.showinfo("Epic Feat Added", f"{selected} has been added to your epic feats!")
+        
+        add_btn = ttk.Button(available_frame, text="Add Epic Feat", command=add_epic_feat)
+        add_btn.pack(pady=5)
+        
+        # Close button
+        close_btn = ttk.Button(dialog, text="Close", command=dialog.destroy)
+        close_btn.pack(pady=10)
     
     def add_ability(self):
         """Add a special ability to the character"""
