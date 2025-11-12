@@ -3,6 +3,13 @@ D&D 3rd Edition Character Model
 Handles all character statistics and automatic calculations
 """
 
+from prestige_classes import (
+    PRESTIGE_CLASS_DEFINITIONS, 
+    check_prestige_class_requirements,
+    get_prestige_class_info,
+    is_prestige_class
+)
+
 # D&D 3e Class definitions
 CLASS_DEFINITIONS = {
     'Fighter': {
@@ -633,17 +640,37 @@ class Character:
         if not self.classes:  # Always have at least one class
             self.classes = [{'name': 'Fighter', 'level': 1}]
     
-    def get_class_info(self):
-        """Get class information from CLASS_DEFINITIONS (uses primary class)"""
-        return CLASS_DEFINITIONS.get(self.character_class, CLASS_DEFINITIONS['Fighter'])
+    def get_class_info(self, class_name=None):
+        """
+        Get class information from CLASS_DEFINITIONS or PRESTIGE_CLASS_DEFINITIONS
+        If no class_name provided, uses primary class
+        """
+        if class_name is None:
+            class_name = self.character_class
+        
+        # Check prestige classes first
+        if is_prestige_class(class_name):
+            return get_prestige_class_info(class_name)
+        
+        # Otherwise check base classes
+        return CLASS_DEFINITIONS.get(class_name, CLASS_DEFINITIONS['Fighter'])
+    
+    def check_prestige_requirements(self, prestige_class_name):
+        """
+        Check if character meets requirements for a prestige class.
+        Returns (eligible, list of requirements/unmet requirements)
+        """
+        return check_prestige_class_requirements(self, prestige_class_name)
     
     def get_base_attack_bonus_from_class(self):
-        """Calculate BAB based on all classes (multiclass stacking)"""
+        """Calculate BAB based on all classes (multiclass stacking, including prestige)"""
         total_bab = 0
         for class_entry in self.classes:
             class_name = class_entry['name']
             class_level = class_entry['level']
-            class_info = CLASS_DEFINITIONS.get(class_name, CLASS_DEFINITIONS['Fighter'])
+            
+            # Get class info (works for both base and prestige classes)
+            class_info = self.get_class_info(class_name)
             progression = class_info['bab_progression']
             
             if progression == 'full':
@@ -656,7 +683,7 @@ class Character:
         return total_bab
     
     def get_base_save_from_class(self, save_type):
-        """Calculate base save bonus from all classes (multiclass stacking)
+        """Calculate base save bonus from all classes (multiclass stacking, including prestige)
         Args:
             save_type: 'fort', 'ref', or 'will'
         """
@@ -664,7 +691,9 @@ class Character:
         for class_entry in self.classes:
             class_name = class_entry['name']
             class_level = class_entry['level']
-            class_info = CLASS_DEFINITIONS.get(class_name, CLASS_DEFINITIONS['Fighter'])
+            
+            # Get class info (works for both base and prestige classes)
+            class_info = self.get_class_info(class_name)
             progression_key = f'{save_type}_progression'
             progression = class_info[progression_key]
             

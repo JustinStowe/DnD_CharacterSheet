@@ -8,6 +8,11 @@ from tkinter import ttk, messagebox, filedialog
 import json
 import os
 from character import Character, CLASS_DEFINITIONS
+from prestige_classes import (
+    PRESTIGE_CLASS_DEFINITIONS,
+    get_all_prestige_classes,
+    is_prestige_class
+)
 
 
 class CharacterSheetGUI:
@@ -1089,38 +1094,128 @@ class CharacterSheetGUI:
             self.mark_modified()
         
         def add_new_class():
-            """Add a new class"""
+            """Add a new class (including prestige classes)"""
             # Create popup for class selection
             add_dialog = tk.Toplevel(dialog)
             add_dialog.title("Add Class")
-            add_dialog.geometry("300x150")
+            add_dialog.geometry("500x450")
             add_dialog.transient(dialog)
             add_dialog.grab_set()
             
-            ttk.Label(add_dialog, text="Select Class to Add:").pack(pady=10)
+            # Class selection frame
+            selection_frame = ttk.LabelFrame(add_dialog, text="Select Class", padding=10)
+            selection_frame.pack(fill='x', padx=10, pady=10)
+            
+            ttk.Label(selection_frame, text="Choose a class to add:").pack(pady=5)
             
             # Get available classes (exclude ones already taken)
             current_classes = [c['name'] for c in self.character.classes]
-            available_classes = [c for c in sorted(CLASS_DEFINITIONS.keys()) if c not in current_classes]
+            available_base_classes = [c for c in sorted(CLASS_DEFINITIONS.keys()) if c not in current_classes]
+            available_prestige_classes = [c for c in sorted(get_all_prestige_classes()) if c not in current_classes]
             
-            if not available_classes:
+            # Combine base and prestige classes with separator
+            all_available = []
+            if available_base_classes:
+                all_available.extend(available_base_classes)
+            if available_prestige_classes:
+                if all_available:
+                    all_available.append("--- PRESTIGE CLASSES ---")
+                all_available.extend(available_prestige_classes)
+            
+            if not all_available or all_available == ["--- PRESTIGE CLASSES ---"]:
                 messagebox.showinfo("No Classes Available", "You already have all available classes!")
                 add_dialog.destroy()
                 return
             
-            class_var = tk.StringVar(value=available_classes[0])
-            class_combo = ttk.Combobox(add_dialog, textvariable=class_var, values=available_classes, state='readonly', width=20)
+            class_var = tk.StringVar(value=all_available[0])
+            class_combo = ttk.Combobox(add_dialog, textvariable=class_var, values=all_available, 
+                                      state='readonly', width=30)
             class_combo.pack(pady=5)
+            
+            # Requirements display
+            req_frame = ttk.LabelFrame(add_dialog, text="Requirements", padding=10)
+            req_frame.pack(fill='both', expand=True, padx=10, pady=10)
+            
+            req_text = tk.Text(req_frame, height=12, width=55, wrap='word', state='disabled')
+            req_scrollbar = ttk.Scrollbar(req_frame, command=req_text.yview)
+            req_text.config(yscrollcommand=req_scrollbar.set)
+            req_text.pack(side='left', fill='both', expand=True)
+            req_scrollbar.pack(side='right', fill='y')
+            
+            def update_requirements():
+                """Update requirements display when class selection changes"""
+                selected = class_var.get()
+                req_text.config(state='normal')
+                req_text.delete(1.0, tk.END)
+                
+                if selected == "--- PRESTIGE CLASSES ---":
+                    req_text.insert(tk.END, "Please select a class.")
+                    req_text.config(state='disabled')
+                    return
+                
+                if is_prestige_class(selected):
+                    # Show prestige class requirements
+                    eligible, requirements = self.character.check_prestige_requirements(selected)
+                    
+                    prestige_info = PRESTIGE_CLASS_DEFINITIONS[selected]
+                    req_text.insert(tk.END, f"Prestige Class: {selected}\n\n", 'bold')
+                    req_text.insert(tk.END, f"{prestige_info['description']}\n\n")
+                    
+                    if eligible:
+                        req_text.insert(tk.END, "✓ You meet the basic requirements!\n\n", 'success')
+                    else:
+                        req_text.insert(tk.END, "⚠ Requirements not fully verified:\n\n", 'warning')
+                    
+                    req_text.insert(tk.END, "Requirements:\n")
+                    for req in requirements:
+                        req_text.insert(tk.END, f"  • {req}\n")
+                    
+                    # Configure tags
+                    req_text.tag_config('bold', font=('TkDefaultFont', 9, 'bold'))
+                    req_text.tag_config('success', foreground='green', font=('TkDefaultFont', 9, 'bold'))
+                    req_text.tag_config('warning', foreground='orange', font=('TkDefaultFont', 9, 'bold'))
+                else:
+                    # Base class - no special requirements
+                    req_text.insert(tk.END, f"Base Class: {selected}\n\n")
+                    req_text.insert(tk.END, "No special requirements.")
+                
+                req_text.config(state='disabled')
+            
+            class_combo.bind('<<ComboboxSelected>>', lambda e: update_requirements())
+            update_requirements()  # Initial display
+            
+            # Buttons
+            button_frame = ttk.Frame(add_dialog)
+            button_frame.pack(fill='x', padx=10, pady=10)
             
             def confirm_add():
                 selected_class = class_var.get()
+                
+                if selected_class == "--- PRESTIGE CLASSES ---":
+                    messagebox.showwarning("Invalid Selection", "Please select an actual class.")
+                    return
+                
+                # Warn if adding prestige class with unmet requirements
+                if is_prestige_class(selected_class):
+                    eligible, requirements = self.character.check_prestige_requirements(selected_class)
+                    if not eligible:
+                        response = messagebox.askyesno(
+                            "Requirements Check",
+                            f"Some requirements for {selected_class} may not be fully met.\n\n"
+                            "Do you want to add this prestige class anyway?",
+                            icon='warning'
+                        )
+                        if not response:
+                            return
+                
                 self.character.add_class(selected_class, 1)
                 self.character.update_class_based_stats()
                 refresh_classes_display()
                 self.mark_modified()
                 add_dialog.destroy()
             
-            ttk.Button(add_dialog, text="Add Class", command=confirm_add).pack(pady=10)
+            ttk.Button(button_frame, text="Add Class", command=confirm_add).pack(side='left', padx=5)
+            ttk.Button(button_frame, text="Cancel", command=add_dialog.destroy).pack(side='right', padx=5)
         
         # Total level display
         total_frame = ttk.Frame(dialog)

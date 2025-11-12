@@ -10,11 +10,19 @@ An interactive character sheet application for Dungeons & Dragons 3rd Edition th
   - Wizard (Intelligence-based caster)
   - Sorcerer, Bard (Charisma-based casters)
   - Monk, Rogue (skill specialists)
+- **Prestige class support**: 12 prestige classes with automatic requirement checking
+  - Arcane Archer, Arcane Trickster, Assassin, Blackguard
+  - Dragon Disciple, Duelist, Dwarven Defender, Eldritch Knight
+  - Horizon Walker, Loremaster, Mystic Theurge, Shadowdancer
+  - Requirements displayed when adding prestige classes
+  - Validates race, alignment, BAB, skills, and other prerequisites
+  - Full integration with multiclass system
 - **Multiclass support**: Take levels in multiple classes with proper D&D 3e stacking rules
   - BAB stacks from all classes based on their progressions
   - Saving throws stack from all classes based on their progressions
   - Track individual class levels separately
   - Choose which class to level when gaining levels
+  - Mix base classes and prestige classes freely
 - **Character advancement**: Level up with automatic BAB, save, HP, and skill point calculations
 - **Auto-calculating stats**: Change your stat score and watch your saves update automatically
 - **Complete character tracking**:
@@ -75,9 +83,14 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
 #### Main Tab
 
 1. **Class & Multiclass Management**:
-   - Display shows all current classes and levels (e.g., "Fighter 5 / Wizard 3")
+   - Display shows all current classes and levels (e.g., "Fighter 5 / Wizard 3 / Duelist 2")
    - **Manage Classes Button**: Opens dialog to manage multiple classes
-     - Add new classes to your character
+     - Add base classes or prestige classes to your character
+     - **Prestige Class Requirements**: Automatically checks and displays prerequisites
+       - Race, alignment, BAB requirements
+       - Skill rank requirements
+       - Feat and spellcasting requirements
+       - Warning if requirements aren't fully met
      - Adjust levels in each class independently
      - Remove classes (must have at least one)
      - View total character level
@@ -85,7 +98,8 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
    - **Multiclass BAB & Saves**: Stack correctly according to D&D 3e rules
      - Fighter 5: BAB +5, Fort +4, Ref +1, Will +1
      - Wizard 3: BAB +1, Fort +1, Ref +1, Will +3
-     - Combined Fighter 5/Wizard 3: BAB +6, Fort +5, Ref +2, Will +4
+     - Duelist 2: BAB +2, Fort +0, Ref +3, Will +0
+     - Combined Fighter 5/Wizard 3/Duelist 2: BAB +8, Fort +5, Ref +5, Will +4
 2. **Level & Experience**: Track your character's progression
    - XP tracking with next level threshold display
    - **Level Up Button**: Opens dialog to advance your character
@@ -435,6 +449,55 @@ All 11 D&D 3e core classes are supported with accurate progressions:
 - **BAB**: +4 (Fighter: +2, Rogue: +2, Monk: +0)
 - **Saves**: Fort +4 (Fighter: +3, Rogue: +1, Monk: +0), Ref +6 (Fighter: +0, Rogue: +3, Monk: +3), Will +2 (Fighter: +0, Rogue: +1, Monk: +1)
 - **Special**: Mix of Fighter feats, Rogue sneak attack, and Monk abilities
+
+## Prestige Class Examples
+
+### Fighter 7 / Duelist 3 (Master Fencer)
+
+- **Total Level**: 10
+- **BAB**: +10 (Both full BAB: Fighter +7, Duelist +3)
+- **Saves**: Fort +6 (Fighter: +5, Duelist: +1), Ref +5 (Fighter: +2, Duelist: +3), Will +3 (Fighter: +2, Duelist: +1)
+- **Requirements Met**: BAB +6, Dodge, Mobility, Weapon Finesse, Perform 3 ranks, Tumble 5 ranks
+- **HP**: Fighter d10 × 7 + Duelist d10 × 3 + CON mod × 10
+
+### Wizard 5 / Fighter 2 / Eldritch Knight 3 (Battlemage)
+
+- **Total Level**: 10
+- **BAB**: +7 (Fighter: +2, Wizard: +2, Eldritch Knight: +3)
+- **Saves**: Fort +7 (Fighter: +3, Wizard: +1, Eldritch Knight: +3), Ref +3, Will +7
+- **Requirements Met**: Martial weapon proficiency, 3rd-level arcane spells
+- **Spellcasting**: Continues as Wizard (advances with Eldritch Knight levels)
+
+### Rogue 5 / Wizard 3 / Arcane Trickster 2 (Sneaky Mage)
+
+- **Total Level**: 10
+- **BAB**: +5 (Rogue: +3, Wizard: +1, Arcane Trickster: +1)
+- **Saves**: Fort +3, Ref +10 (Rogue: +4, Wizard: +1, Arcane Trickster: +3), Will +6
+- **Requirements Met**: Nonlawful alignment, sneak attack +2d6, mage hand, 3rd-level arcane spells
+- **Special**: Combines sneak attack with spellcasting, ranged legerdemain
+
+### Cleric 3 / Wizard 3 / Mystic Theurge 4 (Divine & Arcane Master)
+
+- **Total Level**: 10
+- **BAB**: +5 (Cleric: +2, Wizard: +1, Mystic Theurge: +2)
+- **Saves**: Fort +6, Ref +3, Will +13 (All good progressions)
+- **Requirements Met**: Knowledge (arcana) 6, Knowledge (religion) 6, 2nd-level divine & arcane spells
+- **Spellcasting**: Advances BOTH divine and arcane casting with Mystic Theurge levels
+
+## Available Prestige Classes
+
+1. **Arcane Archer**: Elf/half-elf archer-mage (requires BAB +6, arcane spells)
+2. **Arcane Trickster**: Rogue-wizard hybrid (requires sneak attack, 3rd-level arcane)
+3. **Assassin**: Evil death dealer (requires evil alignment, Hide 8, Move Silently 8)
+4. **Blackguard**: Dark warrior (requires evil alignment, BAB +6, evil outsider contact)
+5. **Dragon Disciple**: Sorcerer with dragon powers (requires sorcerer 5+)
+6. **Duelist**: Finesse fighter (requires BAB +6, Dodge, Mobility, Weapon Finesse)
+7. **Dwarven Defender**: Defensive dwarf warrior (requires dwarf, lawful, BAB +7)
+8. **Eldritch Knight**: Warrior-mage (requires martial weapons, 3rd-level arcane)
+9. **Horizon Walker**: Terrain master (requires Knowledge (geography) 8)
+10. **Loremaster**: Knowledge seeker (requires 10 ranks in 3 Knowledge skills, metamagic feats)
+11. **Mystic Theurge**: Dual caster (requires 2nd-level divine AND arcane spells)
+12. **Shadowdancer**: Shadow manipulator (requires Hide 10, Move Silently 8, Perform (dance) 5)
 
 ## License
 
