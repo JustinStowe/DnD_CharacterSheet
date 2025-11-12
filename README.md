@@ -10,6 +10,11 @@ An interactive character sheet application for Dungeons & Dragons 3rd Edition th
   - Wizard (Intelligence-based caster)
   - Sorcerer, Bard (Charisma-based casters)
   - Monk, Rogue (skill specialists)
+- **Multiclass support**: Take levels in multiple classes with proper D&D 3e stacking rules
+  - BAB stacks from all classes based on their progressions
+  - Saving throws stack from all classes based on their progressions
+  - Track individual class levels separately
+  - Choose which class to level when gaining levels
 - **Character advancement**: Level up with automatic BAB, save, HP, and skill point calculations
 - **Auto-calculating stats**: Change your stat score and watch your saves update automatically
 - **Complete character tracking**:
@@ -60,6 +65,7 @@ python character_sheet_gui.py
 Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](BUILD_EXECUTABLE.md) for detailed instructions.
 
 **Quick method:**
+
 1. Double-click `build_executable.bat` (Windows)
 2. Find the executable in the `dist` folder
 3. Double-click to run!
@@ -68,25 +74,37 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
 
 #### Main Tab
 
-1. **Class Selection**: Choose your character class from the dropdown menu
+1. **Class & Multiclass Management**:
+   - Display shows all current classes and levels (e.g., "Fighter 5 / Wizard 3")
+   - **Manage Classes Button**: Opens dialog to manage multiple classes
+     - Add new classes to your character
+     - Adjust levels in each class independently
+     - Remove classes (must have at least one)
+     - View total character level
    - Automatically sets BAB progression, save progressions, hit die, and spellcasting ability
-   - Changes to class immediately update BAB and base saves
+   - **Multiclass BAB & Saves**: Stack correctly according to D&D 3e rules
+     - Fighter 5: BAB +5, Fort +4, Ref +1, Will +1
+     - Wizard 3: BAB +1, Fort +1, Ref +1, Will +3
+     - Combined Fighter 5/Wizard 3: BAB +6, Fort +5, Ref +2, Will +4
 2. **Level & Experience**: Track your character's progression
    - XP tracking with next level threshold display
    - **Level Up Button**: Opens dialog to advance your character
-     - Roll or use average for HP gain
+     - Choose which class to level (for multiclass characters)
+     - Roll or use average for HP gain (based on selected class's hit die)
      - Automatically updates BAB, saves, and grants skill points
      - Preview shows all changes before confirming
 3. **Ability Scores**: Enter your ability scores (STR, DEX, CON, INT, WIS, CHA)
    - The modifier is calculated automatically
    - Use "Temp" fields for temporary bonuses/penalties
 4. **Saving Throws**: Base saves auto-calculate from class and level
+   - For multiclass characters, saves stack from all classes
    - Ability modifiers are added automatically
    - Add misc bonuses from feats, items, etc.
 5. **Armor Class**: Enter armor, shield, and other AC bonuses
    - DEX modifier is applied automatically
    - Touch AC and Flat-footed AC are calculated for you
 6. **Combat**: Base Attack Bonus auto-calculates from class and level
+   - For multiclass characters, BAB stacks from all classes
    - Melee attack (BAB + STR) is calculated automatically
    - Ranged attack (BAB + DEX) is calculated automatically
 
@@ -384,6 +402,39 @@ All 11 D&D 3e core classes are supported with accurate progressions:
 - **Encumbrance Penalties**: Automatically applied based on current weight vs capacity
 - **Spell Save DC**: 10 + Spell Level + Spellcasting Ability Modifier
 - **Spell Slots**: Track max slots, used slots, and remaining slots for each spell level (0-9)
+- **Multiclass BAB**: Sum of BAB from all classes based on their progressions
+  - Full BAB (Fighter, Barbarian, Paladin, Ranger): Level × 1
+  - Medium BAB (Cleric, Druid, Monk, Rogue): Level × 0.75
+  - Poor BAB (Wizard, Sorcerer, Bard): Level × 0.5
+  - Example: Fighter 5 (BAB +5) / Rogue 3 (BAB +2) = Total BAB +7
+- **Multiclass Saves**: Sum of base saves from all classes based on their progressions
+  - Good save: 2 + (Level × 0.5)
+  - Poor save: 0 + (Level × 0.33)
+  - Example: Cleric 4 (Fort +4, Ref +1, Will +4) / Fighter 2 (Fort +3, Ref +0, Will +0) = Fort +7, Ref +1, Will +4
+
+## Multiclass Examples
+
+### Fighter 5 / Wizard 3 (Eldritch Knight concept)
+
+- **Total Level**: 8
+- **BAB**: +6 (Fighter: +5, Wizard: +1)
+- **Saves**: Fort +5 (Fighter: +4, Wizard: +1), Ref +2 (Fighter: +1, Wizard: +1), Will +4 (Fighter: +1, Wizard: +3)
+- **HP**: Fighter d10 × 5 + Wizard d4 × 3 + CON mod × 8
+- **Skills**: Fighter 2/level × 5 + Wizard 2/level × 3 (plus INT mod)
+
+### Ranger 7 / Druid 2 (Nature specialist)
+
+- **Total Level**: 9
+- **BAB**: +8 (Both full BAB: Ranger +7, Druid +1)
+- **Saves**: Fort +9 (Ranger: +5, Druid: +4), Ref +5 (Ranger: +5, Druid: +0), Will +4 (Ranger: +2, Druid: +2)
+- **Spellcasting**: Both classes grant spells (WIS-based)
+
+### Rogue 3 / Fighter 2 / Monk 1 (Jack of all trades)
+
+- **Total Level**: 6
+- **BAB**: +4 (Fighter: +2, Rogue: +2, Monk: +0)
+- **Saves**: Fort +4 (Fighter: +3, Rogue: +1, Monk: +0), Ref +6 (Fighter: +0, Rogue: +3, Monk: +3), Will +2 (Fighter: +0, Rogue: +1, Monk: +1)
+- **Special**: Mix of Fighter feats, Rogue sneak attack, and Monk abilities
 
 ## License
 

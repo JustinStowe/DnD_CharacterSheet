@@ -273,8 +273,8 @@ class Character:
         # Basic Info
         self.name = ""
         self.player = ""
-        self.character_class = "Fighter"  # Default class
-        self.level = 1
+        self.character_class = "Fighter"  # Primary class for backward compatibility
+        self.level = 1  # Total character level
         self.race = ""
         self.alignment = ""
         self.deity = ""
@@ -283,6 +283,9 @@ class Character:
         self.gender = ""
         self.height = ""
         self.weight = ""
+        
+        # Multiclass support
+        self.classes = [{'name': 'Fighter', 'level': 1}]  # List of {'name': str, 'level': int}
         
         # Level tracking
         self.experience = 0
@@ -605,44 +608,85 @@ class Character:
         
         return ranks + ability_mod + misc
     
+    def get_total_level(self):
+        """Calculate total character level from all classes"""
+        return sum(c['level'] for c in self.classes)
+    
+    def get_class_level(self, class_name):
+        """Get the level in a specific class"""
+        for c in self.classes:
+            if c['name'] == class_name:
+                return c['level']
+        return 0
+    
+    def add_class(self, class_name, level=1):
+        """Add a new class or increase level in existing class"""
+        for c in self.classes:
+            if c['name'] == class_name:
+                c['level'] += level
+                return
+        self.classes.append({'name': class_name, 'level': level})
+    
+    def remove_class(self, class_name):
+        """Remove a class entirely"""
+        self.classes = [c for c in self.classes if c['name'] != class_name]
+        if not self.classes:  # Always have at least one class
+            self.classes = [{'name': 'Fighter', 'level': 1}]
+    
     def get_class_info(self):
-        """Get class information from CLASS_DEFINITIONS"""
+        """Get class information from CLASS_DEFINITIONS (uses primary class)"""
         return CLASS_DEFINITIONS.get(self.character_class, CLASS_DEFINITIONS['Fighter'])
     
     def get_base_attack_bonus_from_class(self):
-        """Calculate BAB based on class and level"""
-        class_info = self.get_class_info()
-        progression = class_info['bab_progression']
+        """Calculate BAB based on all classes (multiclass stacking)"""
+        total_bab = 0
+        for class_entry in self.classes:
+            class_name = class_entry['name']
+            class_level = class_entry['level']
+            class_info = CLASS_DEFINITIONS.get(class_name, CLASS_DEFINITIONS['Fighter'])
+            progression = class_info['bab_progression']
+            
+            if progression == 'full':
+                total_bab += class_level
+            elif progression == 'medium':
+                total_bab += (class_level * 3) // 4
+            else:  # poor
+                total_bab += class_level // 2
         
-        if progression == 'full':
-            return self.level
-        elif progression == 'medium':
-            return (self.level * 3) // 4
-        else:  # poor
-            return self.level // 2
+        return total_bab
     
     def get_base_save_from_class(self, save_type):
-        """Calculate base save bonus from class and level
+        """Calculate base save bonus from all classes (multiclass stacking)
         Args:
             save_type: 'fort', 'ref', or 'will'
         """
-        class_info = self.get_class_info()
-        progression_key = f'{save_type}_progression'
-        progression = class_info[progression_key]
+        total_save = 0
+        for class_entry in self.classes:
+            class_name = class_entry['name']
+            class_level = class_entry['level']
+            class_info = CLASS_DEFINITIONS.get(class_name, CLASS_DEFINITIONS['Fighter'])
+            progression_key = f'{save_type}_progression'
+            progression = class_info[progression_key]
+            
+            if progression == 'good':
+                total_save += 2 + (class_level // 2)
+            else:  # poor
+                total_save += class_level // 3
         
-        if progression == 'good':
-            return 2 + (self.level // 2)
-        else:  # poor
-            return self.level // 3
+        return total_save
     
     def update_class_based_stats(self):
-        """Update BAB and saves based on current class and level"""
+        """Update BAB and saves based on current classes and levels"""
+        # Update total level
+        self.level = self.get_total_level()
+        
+        # Calculate multiclass BAB and saves
         self.base_attack_bonus = self.get_base_attack_bonus_from_class()
         self.fort_base = self.get_base_save_from_class('fort')
         self.ref_base = self.get_base_save_from_class('ref')
         self.will_base = self.get_base_save_from_class('will')
         
-        # Update spellcasting ability based on class
+        # Update spellcasting ability based on primary class
         class_info = self.get_class_info()
         if class_info['spellcasting_ability']:
             self.spellcasting_ability = class_info['spellcasting_ability']
@@ -980,6 +1024,9 @@ class Character:
             'height': self.height,
             'weight': self.weight,
             
+            # Multiclass
+            'classes': self.classes.copy() if hasattr(self, 'classes') else [{'name': self.character_class, 'level': self.level}],
+            
             # Leveling
             'experience': self.experience,
             'next_level_xp': self.next_level_xp,
@@ -1065,6 +1112,13 @@ class Character:
         self.gender = data.get('gender', '')
         self.height = data.get('height', '')
         self.weight = data.get('weight', '')
+        
+        # Multiclass - backward compatibility with old save files
+        if 'classes' in data:
+            self.classes = data['classes'].copy()
+        else:
+            # Old save file format - convert to multiclass format
+            self.classes = [{'name': self.character_class, 'level': self.level}]
         
         # Leveling
         self.experience = data.get('experience', 0)

@@ -60,6 +60,7 @@ class CharacterSheetGUI:
         self.build_magic_items_tab()
         
         # Initial update
+        self.update_class_display()
         self.update_all_calculated_fields()
         
         # Set up window close protocol
@@ -372,21 +373,22 @@ class CharacterSheetGUI:
         self.entries['name'] = self.create_labeled_entry(basic_frame, "Name:", 0, 0, width=20)
         self.entries['player'] = self.create_labeled_entry(basic_frame, "Player:", 0, 2, width=20)
         
-        # Class dropdown
+        # Class display and management
         ttk.Label(basic_frame, text="Class:").grid(row=1, column=0, sticky='e', padx=2, pady=2)
-        self.class_var = tk.StringVar(value='Fighter')
-        self.class_dropdown = ttk.Combobox(basic_frame, textvariable=self.class_var, 
-                                           values=sorted(CLASS_DEFINITIONS.keys()), 
-                                           state='readonly', width=13)
-        self.class_dropdown.grid(row=1, column=1, sticky='w', padx=2, pady=2)
-        self.class_dropdown.bind('<<ComboboxSelected>>', lambda e: self.on_class_changed())
-        self.entries['class'] = self.class_dropdown  # For compatibility with other code
         
-        self.entries['level'] = self.create_labeled_entry(basic_frame, "Level:", 1, 2, width=5)
+        # Show classes (for display purposes - actual management done through dialog)
+        self.class_display = ttk.Label(basic_frame, text="Fighter 1", relief='sunken', anchor='w', width=25)
+        self.class_display.grid(row=1, column=1, columnspan=2, sticky='ew', padx=2, pady=2)
+        
+        # Manage Classes button
+        self.manage_classes_button = ttk.Button(basic_frame, text="Manage Classes", command=self.show_manage_classes_dialog)
+        self.manage_classes_button.grid(row=1, column=3, padx=5, pady=2)
+        
+        self.entries['level'] = self.create_labeled_entry(basic_frame, "Total Level:", 1, 4, width=5)
         
         # Level Up button
         self.level_up_button = ttk.Button(basic_frame, text="Level Up", command=self.show_level_up_dialog)
-        self.level_up_button.grid(row=1, column=4, padx=5, pady=2)
+        self.level_up_button.grid(row=1, column=6, padx=5, pady=2)
         
         # XP tracking
         ttk.Label(basic_frame, text="XP:").grid(row=2, column=0, sticky='e', padx=2, pady=2)
@@ -998,33 +1000,223 @@ class CharacterSheetGUI:
             self.character.experience = self.get_entry_int('experience', 0)
             self.mark_modified()
     
+    def show_manage_classes_dialog(self):
+        """Show dialog for managing multiple classes"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Manage Classes")
+        dialog.geometry("550x450")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Info frame
+        info_frame = ttk.LabelFrame(dialog, text="Current Classes", padding=10)
+        info_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Create a scrollable frame for classes
+        canvas = tk.Canvas(info_frame)
+        scrollbar = ttk.Scrollbar(info_frame, orient="vertical", command=canvas.yview)
+        classes_frame = ttk.Frame(canvas)
+        
+        classes_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=classes_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Track class level entries
+        class_entries = {}
+        
+        def refresh_classes_display():
+            """Refresh the display of all classes"""
+            # Clear existing widgets
+            for widget in classes_frame.winfo_children():
+                widget.destroy()
+            class_entries.clear()
+            
+            # Header
+            ttk.Label(classes_frame, text="Class", font=('TkDefaultFont', 9, 'bold')).grid(row=0, column=0, padx=5, pady=5, sticky='w')
+            ttk.Label(classes_frame, text="Level", font=('TkDefaultFont', 9, 'bold')).grid(row=0, column=1, padx=5, pady=5)
+            ttk.Label(classes_frame, text="", font=('TkDefaultFont', 9, 'bold')).grid(row=0, column=2, padx=5, pady=5)
+            
+            # Display each class
+            for idx, class_info in enumerate(self.character.classes):
+                class_name = class_info['name']
+                class_level = class_info['level']
+                
+                # Class name label
+                ttk.Label(classes_frame, text=class_name).grid(row=idx+1, column=0, padx=5, pady=2, sticky='w')
+                
+                # Level spinbox
+                level_var = tk.IntVar(value=class_level)
+                level_spinbox = ttk.Spinbox(classes_frame, from_=1, to=20, textvariable=level_var, width=5)
+                level_spinbox.grid(row=idx+1, column=1, padx=5, pady=2)
+                
+                class_entries[class_name] = level_var
+                
+                # Update level callback
+                def update_level(cn=class_name, lv=level_var):
+                    for c in self.character.classes:
+                        if c['name'] == cn:
+                            c['level'] = lv.get()
+                            break
+                    self.character.update_class_based_stats()
+                    update_total_label()
+                
+                level_spinbox.config(command=update_level)
+                
+                # Remove button (only if more than one class)
+                if len(self.character.classes) > 1:
+                    remove_btn = ttk.Button(classes_frame, text="Remove", 
+                                          command=lambda cn=class_name: remove_class(cn))
+                    remove_btn.grid(row=idx+1, column=2, padx=5, pady=2)
+            
+            update_total_label()
+        
+        def remove_class(class_name):
+            """Remove a class"""
+            if len(self.character.classes) <= 1:
+                messagebox.showwarning("Cannot Remove", "Character must have at least one class!")
+                return
+            
+            self.character.remove_class(class_name)
+            self.character.update_class_based_stats()
+            refresh_classes_display()
+            self.mark_modified()
+        
+        def add_new_class():
+            """Add a new class"""
+            # Create popup for class selection
+            add_dialog = tk.Toplevel(dialog)
+            add_dialog.title("Add Class")
+            add_dialog.geometry("300x150")
+            add_dialog.transient(dialog)
+            add_dialog.grab_set()
+            
+            ttk.Label(add_dialog, text="Select Class to Add:").pack(pady=10)
+            
+            # Get available classes (exclude ones already taken)
+            current_classes = [c['name'] for c in self.character.classes]
+            available_classes = [c for c in sorted(CLASS_DEFINITIONS.keys()) if c not in current_classes]
+            
+            if not available_classes:
+                messagebox.showinfo("No Classes Available", "You already have all available classes!")
+                add_dialog.destroy()
+                return
+            
+            class_var = tk.StringVar(value=available_classes[0])
+            class_combo = ttk.Combobox(add_dialog, textvariable=class_var, values=available_classes, state='readonly', width=20)
+            class_combo.pack(pady=5)
+            
+            def confirm_add():
+                selected_class = class_var.get()
+                self.character.add_class(selected_class, 1)
+                self.character.update_class_based_stats()
+                refresh_classes_display()
+                self.mark_modified()
+                add_dialog.destroy()
+            
+            ttk.Button(add_dialog, text="Add Class", command=confirm_add).pack(pady=10)
+        
+        # Total level display
+        total_frame = ttk.Frame(dialog)
+        total_frame.pack(fill='x', padx=10, pady=5)
+        
+        ttk.Label(total_frame, text="Total Level:", font=('TkDefaultFont', 10, 'bold')).pack(side='left', padx=5)
+        total_label = ttk.Label(total_frame, text="1", font=('TkDefaultFont', 10, 'bold'))
+        total_label.pack(side='left', padx=5)
+        
+        def update_total_label():
+            total = self.character.get_total_level()
+            total_label.config(text=str(total))
+        
+        # Buttons frame
+        button_frame = ttk.Frame(dialog)
+        button_frame.pack(fill='x', padx=10, pady=10)
+        
+        ttk.Button(button_frame, text="Add Class", command=add_new_class).pack(side='left', padx=5)
+        ttk.Button(button_frame, text="Close", command=lambda: self.close_manage_classes_dialog(dialog)).pack(side='right', padx=5)
+        
+        # Initial display
+        refresh_classes_display()
+    
+    def close_manage_classes_dialog(self, dialog):
+        """Close the manage classes dialog and update display"""
+        # Update the main display
+        self.update_class_display()
+        self.populate_fields_from_character()
+        dialog.destroy()
+    
+    def update_class_display(self):
+        """Update the class display label to show all classes"""
+        class_text = " / ".join([f"{c['name']} {c['level']}" for c in self.character.classes])
+        self.class_display.config(text=class_text)
+    
     def show_level_up_dialog(self):
         """Show dialog for leveling up character"""
         import random
         
         dialog = tk.Toplevel(self.root)
         dialog.title("Level Up!")
-        dialog.geometry("450x350")
+        dialog.geometry("450x400")
         dialog.transient(self.root)
         dialog.grab_set()
         
-        class_info = self.character.get_class_info()
-        hit_die = class_info['hit_die']
+        # Class selection for multiclass
+        class_select_frame = ttk.LabelFrame(dialog, text="Select Class to Level", padding=10)
+        class_select_frame.pack(fill='x', padx=10, pady=10)
+        
+        ttk.Label(class_select_frame, text="Level up which class?").pack(anchor='w')
+        
+        class_options = [f"{c['name']} (currently level {c['level']})" for c in self.character.classes]
+        class_var = tk.StringVar(value=class_options[0])
+        class_combo = ttk.Combobox(class_select_frame, textvariable=class_var, values=class_options, state='readonly', width=30)
+        class_combo.pack(pady=5, fill='x')
+        
+        # Get selected class info
+        def get_selected_class_name():
+            selection = class_var.get()
+            return selection.split(' (')[0]  # Extract class name before parenthesis
+        
+        def update_class_info():
+            selected_class = get_selected_class_name()
+            class_info = CLASS_DEFINITIONS[selected_class]
+            hit_die = class_info['hit_die']
+            
+            current_level = self.character.get_class_level(selected_class)
+            
+            info_text = f"Current Level: {self.character.get_total_level()}\n"
+            info_text += f"New Total Level: {self.character.get_total_level() + 1}\n"
+            info_text += f"{selected_class} Level: {current_level} → {current_level + 1}\n"
+            info_text += f"Hit Die: d{hit_die}"
+            
+            info_label.config(text=info_text)
+            
+            hp_instructions.config(text=f"Roll 1d{hit_die} for HP (or use average: {(hit_die // 2) + 1})")
+            hp_entry.delete(0, tk.END)
+            hp_entry.insert(0, str((hit_die // 2) + 1))
+            roll_button.config(text=f"Roll d{hit_die}", 
+                             command=lambda: hp_entry.delete(0, tk.END) or hp_entry.insert(0, str(random.randint(1, hit_die))))
+        
+        class_combo.bind('<<ComboboxSelected>>', lambda e: update_class_info())
         
         # Info frame
         info_frame = ttk.LabelFrame(dialog, text="Level Up Information", padding=10)
         info_frame.pack(fill='x', padx=10, pady=10)
         
-        ttk.Label(info_frame, text=f"Current Level: {self.character.level}").pack(anchor='w')
-        ttk.Label(info_frame, text=f"New Level: {self.character.level + 1}").pack(anchor='w')
-        ttk.Label(info_frame, text=f"Class: {self.character.character_class}").pack(anchor='w')
-        ttk.Label(info_frame, text=f"Hit Die: d{hit_die}").pack(anchor='w')
+        info_label = ttk.Label(info_frame, text="", justify='left')
+        info_label.pack(anchor='w')
         
         # HP Roll frame
         hp_frame = ttk.LabelFrame(dialog, text="Hit Points", padding=10)
         hp_frame.pack(fill='x', padx=10, pady=10)
         
-        ttk.Label(hp_frame, text=f"Roll 1d{hit_die} for HP (or use average: {(hit_die // 2) + 1})").pack(anchor='w')
+        hp_instructions = ttk.Label(hp_frame, text="")
+        hp_instructions.pack(anchor='w')
         
         hp_roll_frame = ttk.Frame(hp_frame)
         hp_roll_frame.pack(fill='x', pady=5)
@@ -1032,15 +1224,16 @@ class CharacterSheetGUI:
         ttk.Label(hp_roll_frame, text="HP Roll:").grid(row=0, column=0, sticky='e', padx=5)
         hp_entry = ttk.Entry(hp_roll_frame, width=10)
         hp_entry.grid(row=0, column=1, sticky='w', padx=5)
-        hp_entry.insert(0, str((hit_die // 2) + 1))  # Default to average
         
-        roll_button = ttk.Button(hp_roll_frame, text=f"Roll d{hit_die}", 
-                                command=lambda: hp_entry.delete(0, tk.END) or hp_entry.insert(0, str(random.randint(1, hit_die))))
+        roll_button = ttk.Button(hp_roll_frame, text="Roll", command=lambda: None)
         roll_button.grid(row=0, column=2, padx=5)
         
         con_mod = self.character.get_con_modifier()
         con_mod_str = f"+{con_mod}" if con_mod >= 0 else str(con_mod)
         ttk.Label(hp_frame, text=f"CON Modifier: {con_mod_str} (added automatically)").pack(anchor='w')
+        
+        # Initialize display
+        update_class_info()
         
         # Preview frame
         preview_frame = ttk.LabelFrame(dialog, text="Level Up Preview", padding=10)
@@ -1053,27 +1246,27 @@ class CharacterSheetGUI:
             try:
                 hp_roll = int(hp_entry.get())
             except:
+                selected_class = get_selected_class_name()
+                class_info = CLASS_DEFINITIONS[selected_class]
+                hit_die = class_info['hit_die']
                 hp_roll = (hit_die // 2) + 1
+            
+            selected_class = get_selected_class_name()
+            class_info = CLASS_DEFINITIONS[selected_class]
             
             # Calculate preview
             hp_gain = max(1, hp_roll + con_mod)
-            new_level = self.character.level + 1
-            
-            # Calculate what BAB and saves would be
-            temp_char = Character()
-            temp_char.character_class = self.character.character_class
-            temp_char.level = new_level
-            temp_char.update_class_based_stats()
+            new_total_level = self.character.get_total_level() + 1
             
             skill_points = class_info['skill_points'] + self.character.get_int_modifier()
             skill_points = max(1, skill_points)
             
             preview_text.config(state='normal')
             preview_text.delete(1.0, tk.END)
+            preview_text.insert(tk.END, f"Class: {selected_class}\n")
             preview_text.insert(tk.END, f"HP Gained: +{hp_gain}\n")
             preview_text.insert(tk.END, f"New Max HP: {self.character.max_hp + hp_gain}\n")
-            preview_text.insert(tk.END, f"BAB: +{temp_char.base_attack_bonus}\n")
-            preview_text.insert(tk.END, f"Fort: +{temp_char.fort_base}, Ref: +{temp_char.ref_base}, Will: +{temp_char.will_base}\n")
+            preview_text.insert(tk.END, f"Total Level: {new_total_level}\n")
             preview_text.insert(tk.END, f"Skill Points: +{skill_points}\n")
             preview_text.config(state='disabled')
         
@@ -1088,11 +1281,47 @@ class CharacterSheetGUI:
             try:
                 hp_roll = int(hp_entry.get())
             except:
+                selected_class = get_selected_class_name()
+                class_info = CLASS_DEFINITIONS[selected_class]
+                hit_die = class_info['hit_die']
                 hp_roll = (hit_die // 2) + 1
             
-            result = self.character.level_up(hp_roll)
+            selected_class = get_selected_class_name()
+            
+            # Level up the selected class
+            for class_entry in self.character.classes:
+                if class_entry['name'] == selected_class:
+                    class_entry['level'] += 1
+                    break
+            
+            # Update total level and stats
+            self.character.update_class_based_stats()
+            
+            # Add HP
+            con_mod = self.character.get_con_modifier()
+            hp_gain = max(1, hp_roll + con_mod)
+            
+            # Get class info for skill points
+            class_info = CLASS_DEFINITIONS[selected_class]
+            hit_die = class_info['hit_die']
+            
+            # Store HP roll
+            self.character.hit_dice.append({'class': selected_class, 'roll': hp_roll, 'con_mod': con_mod})
+            self.character.max_hp += hp_gain
+            self.character.current_hp += hp_gain
+            
+            # Add skill points
+            skill_points = class_info['skill_points'] + self.character.get_int_modifier()
+            skill_points = max(1, skill_points)
+            self.character.skill_points_available += skill_points
+            
+            # Update XP requirement
+            new_level = self.character.get_total_level()
+            self.character.level = new_level
+            self.character.next_level_xp = new_level * 1000
             
             # Update GUI
+            self.update_class_display()
             self.set_entry('level', str(self.character.level))
             self.set_entry('max_hp', str(self.character.max_hp))
             self.set_entry('current_hp', str(self.character.current_hp))
@@ -1110,11 +1339,12 @@ class CharacterSheetGUI:
             self.mark_modified()
             
             messagebox.showinfo("Level Up!", 
-                              f"Congratulations! You are now level {result['new_level']}!\n\n"
-                              f"HP gained: +{result['hp_gain']}\n"
-                              f"Skill points: +{result['skill_points']}\n"
-                              f"BAB: +{result['bab']}\n"
-                              f"Saves - Fort: +{result['fort']}, Ref: +{result['ref']}, Will: +{result['will']}")
+                              f"Congratulations! {selected_class} level increased!\n\n"
+                              f"Total Level: {new_level}\n"
+                              f"HP gained: +{hp_gain}\n"
+                              f"Skill points: +{skill_points}\n"
+                              f"BAB: +{self.character.base_attack_bonus}\n"
+                              f"Saves - Fort: +{self.character.fort_base}, Ref: +{self.character.ref_base}, Will: +{self.character.will_base}")
             dialog.destroy()
         
         ttk.Button(button_frame, text="Level Up!", command=do_level_up).pack(side='left', padx=5)
