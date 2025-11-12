@@ -8,12 +8,12 @@ from tkinter import ttk, messagebox, filedialog
 import json
 import os
 from character import Character, CLASS_DEFINITIONS
-from prestige_classes import (
+from prestige_classes.prestige_classes import (
     PRESTIGE_CLASS_DEFINITIONS,
     get_all_prestige_classes,
     is_prestige_class
 )
-from epic_levels import (
+from Epic_levels.epic_levels import (
     EPIC_FEATS,
     get_epic_level_info,
     get_epic_level_description,
@@ -359,6 +359,22 @@ class CharacterSheetGUI:
         
         return entry
     
+    def bind_mousewheel(self, canvas):
+        """Bind mouse wheel scrolling to a canvas"""
+        def on_mousewheel(event):
+            # Windows and MacOS have different scroll event values
+            if event.num == 5 or event.delta < 0:
+                # Scroll down
+                canvas.yview_scroll(1, "units")
+            elif event.num == 4 or event.delta > 0:
+                # Scroll up
+                canvas.yview_scroll(-1, "units")
+        
+        # Bind for different platforms
+        canvas.bind_all("<MouseWheel>", on_mousewheel)  # Windows
+        canvas.bind_all("<Button-4>", on_mousewheel)     # Linux scroll up
+        canvas.bind_all("<Button-5>", on_mousewheel)     # Linux scroll down
+    
     def build_main_tab(self):
         """Build the main character sheet tab"""
         # Create scrollable frame
@@ -376,6 +392,9 @@ class CharacterSheetGUI:
         
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+        
+        # Bind mouse wheel scrolling
+        self.bind_mousewheel(canvas)
         
         # Basic Information Section
         basic_frame = ttk.LabelFrame(scrollable_frame, text="Basic Information", padding=10)
@@ -721,6 +740,9 @@ class CharacterSheetGUI:
         
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+        
+        # Bind mouse wheel scrolling
+        self.bind_mousewheel(canvas)
         
         # Skill points info at top
         points_frame = ttk.Frame(scrollable_frame)

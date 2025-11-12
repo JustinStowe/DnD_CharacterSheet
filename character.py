@@ -3,13 +3,13 @@ D&D 3rd Edition Character Model
 Handles all character statistics and automatic calculations
 """
 
-from prestige_classes import (
+from prestige_classes.prestige_classes import (
     PRESTIGE_CLASS_DEFINITIONS, 
     check_prestige_class_requirements,
     get_prestige_class_info,
     is_prestige_class
 )
-from epic_levels import (
+from Epic_levels.epic_levels import (
     is_epic_level,
     get_epic_level_info,
     get_epic_bab_bonus,

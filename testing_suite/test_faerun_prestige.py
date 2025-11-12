@@ -1,6 +1,8 @@
 """
 Test Magic of Faerûn prestige classes
 """
+import sys
+sys.path.insert(0, '..')
 
 from prestige_classes import (
     get_all_prestige_classes,

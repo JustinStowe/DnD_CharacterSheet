@@ -13,10 +13,10 @@ Total: 70 prestige classes
 """
 
 # Import prestige classes from each sourcebook
-from prestige_tome_and_blood import TOME_AND_BLOOD_PRESTIGE_CLASSES
-from prestige_sword_and_fist import SWORD_AND_FIST_PRESTIGE_CLASSES
-from prestige_song_and_silence import SONG_AND_SILENCE_PRESTIGE_CLASSES
-from prestige_magic_of_faerun import MAGIC_OF_FAERUN_PRESTIGE_CLASSES
+from .prestige_tome_and_blood import TOME_AND_BLOOD_PRESTIGE_CLASSES
+from .prestige_sword_and_fist import SWORD_AND_FIST_PRESTIGE_CLASSES
+from .prestige_song_and_silence import SONG_AND_SILENCE_PRESTIGE_CLASSES
+from .prestige_magic_of_faerun import MAGIC_OF_FAERUN_PRESTIGE_CLASSES
 
 # Core DMG and Magic of Faerûn prestige classes
 CORE_PRESTIGE_CLASS_DEFINITIONS = {

@@ -2,9 +2,11 @@
 Test Epic Level Functionality
 Verify epic level progression, BAB, saves, and epic feats
 """
+import sys
+sys.path.insert(0, '..')
 
 from character import Character
-from epic_levels import (
+from Epic_levels import (
     is_epic_level,
     get_epic_level_info,
     get_epic_feat_progression,
