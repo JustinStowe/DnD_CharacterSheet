@@ -209,7 +209,7 @@ class SpellsTab(BaseTab):
             command=self.reset_spell_slots)
         rest_btn.pack(side='left', padx=5)
 
-        # Spell list frame
+        # Spell list frame with sub-tabs for each spell level
         spells_list_frame = ttk.LabelFrame(
             main_container, text="Spell List", padding=10)
         spells_list_frame.pack(fill='both', expand=True, padx=5, pady=5)
@@ -325,51 +325,82 @@ class SpellsTab(BaseTab):
             command=self.add_spell_to_list)
         add_spell_btn.grid(row=3, column=0, columnspan=6, pady=5)
 
-        # Spell list with scrollbar
-        list_frame = ttk.Frame(spells_list_frame)
-        list_frame.pack(fill='both', expand=True)
-
-        scrollbar = ttk.Scrollbar(list_frame)
-        scrollbar.pack(side='right', fill='y')
-
-        # Create treeview for spells
+        # Create notebook for spell level tabs
+        self.spell_level_notebook = ttk.Notebook(spells_list_frame)
+        self.spell_level_notebook.pack(fill='both', expand=True)
+        
+        # Create a tab for each spell level (0-9)
+        self.spell_level_frames = {}
+        self.spell_level_trees = {}
+        
+        spell_level_names = [
+            "0 (Cantrips)",
+            "1st Level",
+            "2nd Level",
+            "3rd Level",
+            "4th Level",
+            "5th Level",
+            "6th Level",
+            "7th Level",
+            "8th Level",
+            "9th Level"
+        ]
+        
+        # Define columns for the treeview
         columns = (
             'name',
-            'level',
             'school',
             'range',
             'duration',
             'components',
             'prepared')
-        self.spells_tree = ttk.Treeview(
-            list_frame,
-            columns=columns,
-            show='headings',
-            yscrollcommand=scrollbar.set)
+        
+        for level in range(10):
+            # Create frame for this spell level
+            level_frame = ttk.Frame(self.spell_level_notebook)
+            self.spell_level_notebook.add(level_frame, text=spell_level_names[level])
+            self.spell_level_frames[level] = level_frame
+            
+            # Create treeview for this level
+            tree_frame = ttk.Frame(level_frame)
+            tree_frame.pack(fill='both', expand=True, padx=5, pady=5)
+            
+            scrollbar = ttk.Scrollbar(tree_frame)
+            scrollbar.pack(side='right', fill='y')
+            
+            tree = ttk.Treeview(
+                tree_frame,
+                columns=columns,
+                show='headings',
+                yscrollcommand=scrollbar.set)
+            
+            tree.heading('name', text='Spell Name')
+            tree.heading('school', text='School')
+            tree.heading('range', text='Range')
+            tree.heading('duration', text='Duration')
+            tree.heading('components', text='Components')
+            tree.heading('prepared', text='Prepared')
+            
+            tree.column('name', width=200)
+            tree.column('school', width=100)
+            tree.column('range', width=100)
+            tree.column('duration', width=150)
+            tree.column('components', width=100)
+            tree.column('prepared', width=80)
+            
+            tree.pack(side='left', fill='both', expand=True)
+            scrollbar.config(command=tree.yview)
+            
+            # Bind events
+            tree.bind('<Double-1>', self.toggle_spell_prepared)
+            tree.bind('<Delete>', self.delete_spell)
+            
+            self.spell_level_trees[level] = tree
+        
+        # Keep reference to main tree (level 0) for backward compatibility
+        self.spells_tree = self.spell_level_trees[0]
 
-        self.spells_tree.heading('name', text='Spell Name')
-        self.spells_tree.heading('level', text='Level')
-        self.spells_tree.heading('school', text='School')
-        self.spells_tree.heading('range', text='Range')
-        self.spells_tree.heading('duration', text='Duration')
-        self.spells_tree.heading('components', text='Components')
-        self.spells_tree.heading('prepared', text='Prepared')
-
-        self.spells_tree.column('name', width=180)
-        self.spells_tree.column('level', width=50)
-        self.spells_tree.column('school', width=100)
-        self.spells_tree.column('range', width=100)
-        self.spells_tree.column('duration', width=120)
-        self.spells_tree.column('components', width=80)
-        self.spells_tree.column('prepared', width=70)
-
-        self.spells_tree.pack(fill='both', expand=True)
-        scrollbar.config(command=self.spells_tree.yview)
-
-        # Bind double-click to toggle prepared status
-        self.spells_tree.bind('<Double-1>', self.toggle_spell_prepared)
-
-        # Remove button
+        # Remove button frame (applies to all tabs)
         remove_frame = ttk.Frame(spells_list_frame)
         remove_frame.pack(fill='x', pady=(5, 0))
 
@@ -378,24 +409,6 @@ class SpellsTab(BaseTab):
             text="Remove Selected Spell",
             command=self.remove_spell_from_list)
         remove_spell_btn.pack(side='left', padx=2)
-
-        filter_frame = ttk.Frame(remove_frame)
-        filter_frame.pack(side='right')
-
-        ttk.Label(
-            filter_frame,
-            text="Filter by Level:").pack(
-            side='left',
-            padx=2)
-        self.spell_filter_var = tk.StringVar(value="All")
-        filter_combo = ttk.Combobox(filter_frame,
-                                    width=8,
-                                    textvariable=self.spell_filter_var,
-                                    values=["All"] + [str(i) for i in range(10)],
-                                    state='readonly')
-        filter_combo.pack(side='left', padx=2)
-        filter_combo.bind('<<ComboboxSelected>>',
-                          lambda e: self.update_spell_list_display())
 
     def update_spellcasting_ability(self):
         """Update spellcasting ability and recalculate DCs"""
@@ -521,7 +534,12 @@ class SpellsTab(BaseTab):
 
     def remove_spell_from_list(self):
         """Remove selected spell from list"""
-        selection = self.spells_tree.selection()
+        # Get currently active tab (spell level)
+        current_tab_index = self.spell_level_notebook.index(
+            self.spell_level_notebook.select())
+        current_tree = self.spell_level_trees[current_tab_index]
+        
+        selection = current_tree.selection()
         if not selection:
             messagebox.showwarning(
                 "No Selection",
@@ -529,75 +547,83 @@ class SpellsTab(BaseTab):
             return
 
         item = selection[0]
-        index = self.spells_tree.index(item)
+        index = current_tree.index(item)
 
-        # Account for filter
-        filter_level = self.spell_filter_var.get()
-        if filter_level != "All":
-            # Find the actual index in the full spell list
-            filtered_spells = [
-                s for s in self.character.spells if str(
-                    s['level']) == filter_level]
-            spell_to_remove = filtered_spells[index]
-            index = self.character.spells.index(spell_to_remove)
-
-        self.character.remove_spell(index)
-        self.update_spell_list_display()
-        self.mark_modified()
+        # Find the spell in this level's list
+        level_spells = [
+            s for s in self.character.spells if s['level'] == current_tab_index]
+        if index < len(level_spells):
+            spell_to_remove = level_spells[index]
+            # Find actual index in full spell list
+            actual_index = self.character.spells.index(spell_to_remove)
+            self.character.remove_spell(actual_index)
+            self.update_spell_list_display()
+            self.mark_modified()
 
     def toggle_spell_prepared(self, event):
         """Toggle prepared status of selected spell"""
-        selection = self.spells_tree.selection()
+        # Get which tree was clicked
+        widget = event.widget
+        
+        # Find which level tree this is
+        spell_level = None
+        for level, tree in self.spell_level_trees.items():
+            if tree == widget:
+                spell_level = level
+                break
+        
+        if spell_level is None:
+            return
+        
+        selection = widget.selection()
         if not selection:
             return
 
         item = selection[0]
-        index = self.spells_tree.index(item)
+        index = widget.index(item)
 
-        # Account for filter
-        filter_level = self.spell_filter_var.get()
-        if filter_level != "All":
-            filtered_spells = [
-                s for s in self.character.spells if str(
-                    s['level']) == filter_level]
-            spell = filtered_spells[index]
-        else:
-            spell = self.character.spells[index]
-
-        spell['prepared'] = not spell['prepared']
-        self.update_spell_list_display()
-        self.mark_modified()
+        # Find the spell in this level's list
+        level_spells = [
+            s for s in self.character.spells if s['level'] == spell_level]
+        if index < len(level_spells):
+            spell = level_spells[index]
+            spell['prepared'] = not spell['prepared']
+            self.update_spell_list_display()
+            self.mark_modified()
+    
+    def delete_spell(self, event):
+        """Handle delete key press to remove spell"""
+        self.remove_spell_from_list()
 
     def update_spell_list_display(self):
-        """Update the spell list treeview"""
-        # Clear treeview
-        for item in self.spells_tree.get_children():
-            self.spells_tree.delete(item)
+        """Update all spell list treeviews"""
+        # Clear all treeviews
+        for tree in self.spell_level_trees.values():
+            for item in tree.get_children():
+                tree.delete(item)
 
-        # Get filter level
-        filter_level = self.spell_filter_var.get()
-
-        # Filter and sort spells
-        spells_to_show = self.character.spells
-        if filter_level != "All":
-            spells_to_show = [
-                s for s in spells_to_show if str(
-                    s['level']) == filter_level]
-
-        # Sort by level, then name
-        spells_to_show = sorted(
-            spells_to_show, key=lambda x: (
-                x['level'], x['name']))
-
-        # Populate treeview
-        for spell in spells_to_show:
-            prepared_text = "Yes" if spell.get('prepared', False) else "No"
-            self.spells_tree.insert('', 'end', values=(
-                spell['name'],
-                spell['level'],
-                spell.get('school', ''),
-                spell.get('range', ''),
-                spell.get('duration', ''),
-                spell.get('components', ''),
-                prepared_text
-            ))
+        # Sort spells by name within each level
+        spells_by_level = {}
+        for level in range(10):
+            spells_by_level[level] = []
+        
+        for spell in self.character.spells:
+            level = spell.get('level', 0)
+            if 0 <= level <= 9:
+                spells_by_level[level].append(spell)
+        
+        # Populate each level's treeview
+        for level in range(10):
+            tree = self.spell_level_trees[level]
+            level_spells = sorted(spells_by_level[level], key=lambda x: x['name'])
+            
+            for spell in level_spells:
+                prepared_text = "Yes" if spell.get('prepared', False) else "No"
+                tree.insert('', 'end', values=(
+                    spell['name'],
+                    spell.get('school', ''),
+                    spell.get('range', ''),
+                    spell.get('duration', ''),
+                    spell.get('components', ''),
+                    prepared_text
+                ))
