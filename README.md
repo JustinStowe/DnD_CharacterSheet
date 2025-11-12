@@ -57,7 +57,7 @@ An interactive character sheet application for Dungeons & Dragons 3rd Edition th
   - **Weapon statistics** - complete D&D 3e weapon details with auto-calculated attack/damage
   - **Inventory tracking with weight and carrying capacity**
   - **Spell tracking with spell slots and prepared spells**
-  - **Magic item tracking** - slots, properties, and charge management
+  - **Magic item tracking with equipment bonuses** - create items with stat bonuses that automatically apply when equipped
   - **Feat and special ability tracking**
 - **Spellcasting support**: Automatic spellcasting ability assignment based on class
   - Clerics, Druids, Paladins, Rangers use Wisdom
@@ -213,17 +213,61 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
 
 #### Magic Items Tab
 
-- **Add Magic Items**: Track all magical equipment
-  - Item name, type (Weapon, Armor, Ring, Wondrous Item, Potion, Scroll, Wand, Rod, Staff, etc.)
-  - Slot assignment (Head, Eyes, Neck, Shoulders, Body, Arms, Hands, Ring, Waist, Feet, or None)
-  - Caster level for determining spell effects
-  - Properties and full description
-  - Charge tracking for items with limited uses (wands, potions, etc.)
+- **Create Magic Items**: Powerful dialog-based item creation system
+  - **Create New Item Button**: Opens comprehensive magic item creation dialog
+  - **Basic Information**: Name, type, slot, caster level, and charge tracking
+  - **Stat Bonuses System**: Add multiple bonuses that affect character stats when equipped
+    - **Bonus Types Available**:
+      - **Armor Class**: Armor, Shield, Natural Armor, Deflection
+      - **Saving Throws**: Resistance (All Saves), Fort Save, Ref Save, Will Save
+      - **Combat**: Attack Bonus, Damage Bonus
+      - **Ability Scores**: Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma
+      - **Other**: Spell Resistance, Initiative, Skill Bonus (All), Speed Bonus
+    - Add unlimited bonuses to a single item
+    - Each bonus has a type and value (can be negative for penalties)
+    - Example: Vest of the Archmagi with Armor +8, Resistance +5, Spell Resistance +2
+  - **Special Properties**: Text field for abilities like "Recall up to lvl 9 spell (3/day)"
+  - **Description**: Full item description and lore
+- **Equipment System**: 
+  - **Equipped Status**: Click the "Equipped" column (shows ✓) to toggle equipment
+  - **Automatic Stat Application**: When equipped, bonuses immediately apply to character
+    - Armor bonus: Added to AC
+    - Resistance bonus: Added to all three saves (Fort, Ref, Will)
+    - Individual save bonuses: Added to specific saves
+    - Shield/Natural Armor/Deflection: Added to appropriate AC components
+    - All other bonuses: Applied to relevant stats
+  - **Bonus Stacking Rules**: D&D 3e standard - bonuses of same type don't stack (highest applies)
+  - **Real-Time Updates**: Character stats recalculate instantly when toggling equipment
+- **Magic Item Display**:
+  - Tree view shows: Equipped status, Name, Type, Slot, Bonus summary, Charges, Properties
+  - Bonus column shows first 3 bonuses (e.g., "Armor +8, Resistance +5, Spell Resistance +2")
+  - **Double-click item**: Opens detailed view with complete information
+    - All bonuses listed in blue
+    - Full properties and description with scrolling
+    - Current equipped status
 - **Charge Management**:
-  - Use Charge button to decrement charges
+  - Set max charges when creating item
+  - Use Charge (-1) button to decrement charges
   - Recharge button to restore to maximum
-  - Displays current/max charges for each item
-- Remove items from inventory as needed
+  - Displays current/max charges (only shows if item has charges)
+- **Item Management**:
+  - Remove Selected button to delete items
+  - Items persist when saving/loading character
+  - Equipment bonuses automatically reapply when loading character
+
+**Example Magic Item Creation**:
+
+Creating "Vest of the Archmagi":
+1. Click "Create New Item"
+2. Name: "Vest of the Archmagi", Type: "Wondrous Item", Slot: "Body"
+3. Add bonuses:
+   - Armor: +8
+   - Resistance (All Saves): +5
+   - Overcome Spell Resistance: +2
+4. Properties: "Recall up to lvl 9 spell (3/day)\nExpend spell slot: Heal (5 x spell lvl)"
+5. Click "Create Item"
+6. Click the Equipped column to equip it
+7. Character immediately gains: +8 AC, +5 to all saves, +2 Spell Resistance
 
 #### Weapons (Main Tab)
 

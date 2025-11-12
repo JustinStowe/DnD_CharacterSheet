@@ -549,6 +549,35 @@ class Character:
             'wisdom': 0,
             'charisma': 0
         }
+    
+    def get_equipment_bonus(self, bonus_type):
+        """
+        Calculate total bonus from equipped magic items for a specific bonus type.
+        Returns the highest bonus of each type (bonuses of same type don't stack).
+        """
+        bonuses = []
+        for item in self.magic_items:
+            if item.get('equipped', False) and 'bonuses' in item:
+                for bonus in item['bonuses']:
+                    if bonus['type'] == bonus_type:
+                        bonuses.append(bonus['value'])
+        
+        return max(bonuses) if bonuses else 0
+    
+    def get_all_equipment_bonuses(self):
+        """Get a summary of all equipment bonuses currently applied"""
+        bonus_summary = {}
+        for item in self.magic_items:
+            if item.get('equipped', False) and 'bonuses' in item:
+                for bonus in item['bonuses']:
+                    bonus_type = bonus['type']
+                    bonus_value = bonus['value']
+                    
+                    # Track highest bonus of each type
+                    if bonus_type not in bonus_summary or bonus_value > bonus_summary[bonus_type]:
+                        bonus_summary[bonus_type] = bonus_value
+        
+        return bonus_summary
         
     def get_ability_modifier(self, ability_score):
         """Calculate ability modifier from score"""
@@ -655,12 +684,17 @@ class Character:
                 c['level'] += level
                 return
         self.classes.append({'name': class_name, 'level': level})
+        # Update primary class for backward compatibility
+        if not hasattr(self, 'character_class') or not self.character_class:
+            self.character_class = self.classes[0]['name']
     
     def remove_class(self, class_name):
         """Remove a class entirely"""
         self.classes = [c for c in self.classes if c['name'] != class_name]
         if not self.classes:  # Always have at least one class
             self.classes = [{'name': 'Fighter', 'level': 1}]
+        # Update primary class for backward compatibility
+        self.character_class = self.classes[0]['name'] if self.classes else 'Fighter'
     
     def get_class_info(self, class_name=None):
         """
@@ -1076,11 +1110,14 @@ class Character:
     
     def to_dict(self):
         """Convert character to dictionary for saving"""
+        # Get primary class for backward compatibility
+        primary_class = self.classes[0]['name'] if self.classes else 'Fighter'
+        
         return {
             # Basic Info
             'name': self.name,
             'player': self.player,
-            'character_class': self.character_class,
+            'character_class': primary_class,
             'level': self.level,
             'race': self.race,
             'alignment': self.alignment,
@@ -1092,7 +1129,7 @@ class Character:
             'weight': self.weight,
             
             # Multiclass
-            'classes': self.classes.copy() if hasattr(self, 'classes') else [{'name': self.character_class, 'level': self.level}],
+            'classes': self.classes.copy() if hasattr(self, 'classes') else [{'name': primary_class, 'level': self.level}],
             
             # Leveling
             'experience': self.experience,
@@ -1190,6 +1227,9 @@ class Character:
         # Multiclass - backward compatibility with old save files
         if 'classes' in data:
             self.classes = data['classes'].copy()
+            # Update character_class to match primary class
+            if self.classes:
+                self.character_class = self.classes[0]['name']
         else:
             # Old save file format - convert to multiclass format
             self.classes = [{'name': self.character_class, 'level': self.level}]

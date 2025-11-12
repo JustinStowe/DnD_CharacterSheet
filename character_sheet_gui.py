@@ -143,16 +143,191 @@ class CharacterSheetGUI:
             elif response is None:  # Cancel
                 return
         
-        # Create new character
-        self.character = Character()
-        self.current_file = None
-        self.is_modified = False
+        # Show character creation dialog
+        if self.show_character_creation_dialog():
+            # Reset GUI after character creation
+            self.current_file = None
+            self.is_modified = False
+            self.populate_fields_from_character()
+            self.update_all_calculated_fields()
+            self.update_inventory_display()
+            self.update_title()
+    
+    def show_character_creation_dialog(self):
+        """Show dialog for creating a new character. Returns True if character was created."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Create New Character")
+        dialog.geometry("500x600")
+        dialog.transient(self.root)
+        dialog.grab_set()
         
-        # Reset all GUI fields
-        self.populate_fields_from_character()
-        self.update_all_calculated_fields()
-        self.update_inventory_display()
-        self.update_title()
+        # Variables to store user input
+        result = {'created': False}
+        
+        # Create scrollable frame
+        canvas = tk.Canvas(dialog)
+        scrollbar = ttk.Scrollbar(dialog, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Title
+        ttk.Label(scrollable_frame, text="Create New Character", 
+                 font=('TkDefaultFont', 14, 'bold')).pack(pady=10)
+        
+        # Name
+        name_frame = ttk.Frame(scrollable_frame)
+        name_frame.pack(fill="x", padx=20, pady=5)
+        ttk.Label(name_frame, text="Character Name:", width=20).pack(side="left")
+        name_var = tk.StringVar(value="")
+        name_entry = ttk.Entry(name_frame, textvariable=name_var, width=30)
+        name_entry.pack(side="left", fill="x", expand=True)
+        
+        # Player Name
+        player_frame = ttk.Frame(scrollable_frame)
+        player_frame.pack(fill="x", padx=20, pady=5)
+        ttk.Label(player_frame, text="Player Name:", width=20).pack(side="left")
+        player_var = tk.StringVar(value="")
+        ttk.Entry(player_frame, textvariable=player_var, width=30).pack(side="left", fill="x", expand=True)
+        
+        # Race
+        race_frame = ttk.Frame(scrollable_frame)
+        race_frame.pack(fill="x", padx=20, pady=5)
+        ttk.Label(race_frame, text="Race:", width=20).pack(side="left")
+        races = ["Human", "Dwarf", "Elf", "Gnome", "Half-Elf", "Half-Orc", "Halfling"]
+        race_var = tk.StringVar(value="Human")
+        ttk.Combobox(race_frame, textvariable=race_var, values=races, width=28).pack(side="left")
+        
+        # Class
+        class_frame = ttk.Frame(scrollable_frame)
+        class_frame.pack(fill="x", padx=20, pady=5)
+        ttk.Label(class_frame, text="Starting Class:", width=20).pack(side="left")
+        class_names = sorted(CLASS_DEFINITIONS.keys())
+        class_var = tk.StringVar(value="Fighter")
+        ttk.Combobox(class_frame, textvariable=class_var, values=class_names, width=28).pack(side="left")
+        
+        # Alignment
+        align_frame = ttk.Frame(scrollable_frame)
+        align_frame.pack(fill="x", padx=20, pady=5)
+        ttk.Label(align_frame, text="Alignment:", width=20).pack(side="left")
+        alignments = ["Lawful Good", "Neutral Good", "Chaotic Good",
+                     "Lawful Neutral", "True Neutral", "Chaotic Neutral",
+                     "Lawful Evil", "Neutral Evil", "Chaotic Evil"]
+        align_var = tk.StringVar(value="True Neutral")
+        ttk.Combobox(align_frame, textvariable=align_var, values=alignments, width=28).pack(side="left")
+        
+        # Deity
+        deity_frame = ttk.Frame(scrollable_frame)
+        deity_frame.pack(fill="x", padx=20, pady=5)
+        ttk.Label(deity_frame, text="Deity:", width=20).pack(side="left")
+        deity_var = tk.StringVar(value="")
+        ttk.Entry(deity_frame, textvariable=deity_var, width=30).pack(side="left", fill="x", expand=True)
+        
+        # Gender
+        gender_frame = ttk.Frame(scrollable_frame)
+        gender_frame.pack(fill="x", padx=20, pady=5)
+        ttk.Label(gender_frame, text="Gender:", width=20).pack(side="left")
+        gender_var = tk.StringVar(value="")
+        ttk.Entry(gender_frame, textvariable=gender_var, width=30).pack(side="left", fill="x", expand=True)
+        
+        # Ability Scores Section
+        ttk.Separator(scrollable_frame, orient='horizontal').pack(fill='x', padx=20, pady=10)
+        ttk.Label(scrollable_frame, text="Ability Scores", 
+                 font=('TkDefaultFont', 12, 'bold')).pack(pady=5)
+        
+        ability_vars = {}
+        for ability in ['Strength', 'Dexterity', 'Constitution', 'Intelligence', 'Wisdom', 'Charisma']:
+            frame = ttk.Frame(scrollable_frame)
+            frame.pack(fill="x", padx=20, pady=3)
+            ttk.Label(frame, text=f"{ability}:", width=20).pack(side="left")
+            var = tk.IntVar(value=10)
+            ability_vars[ability.lower()] = var
+            spinbox = ttk.Spinbox(frame, from_=3, to=18, textvariable=var, width=10)
+            spinbox.pack(side="left")
+            ttk.Label(frame, text="(Modifier: ", width=12).pack(side="left")
+            mod_label = ttk.Label(frame, text="+0)", width=5)
+            mod_label.pack(side="left")
+            
+            # Update modifier display when ability score changes
+            def update_mod(label=mod_label, v=var):
+                score = v.get()
+                mod = (score - 10) // 2
+                label.config(text=f"{'+' if mod >= 0 else ''}{mod})")
+            var.trace_add('write', lambda *args, l=mod_label, v=var: update_mod(l, v))
+        
+        # Buttons
+        button_frame = ttk.Frame(scrollable_frame)
+        button_frame.pack(pady=20)
+        
+        def create_character():
+            if not name_var.get():
+                messagebox.showwarning("Missing Information", "Please enter a character name.", parent=dialog)
+                name_entry.focus()
+                return
+            
+            # Create the character
+            self.character = Character()
+            self.character.name = name_var.get()
+            self.character.player = player_var.get()
+            self.character.race = race_var.get()
+            self.character.alignment = align_var.get()
+            self.character.deity = deity_var.get()
+            self.character.gender = gender_var.get()
+            
+            # Set ability scores
+            self.character.strength = ability_vars['strength'].get()
+            self.character.dexterity = ability_vars['dexterity'].get()
+            self.character.constitution = ability_vars['constitution'].get()
+            self.character.intelligence = ability_vars['intelligence'].get()
+            self.character.wisdom = ability_vars['wisdom'].get()
+            self.character.charisma = ability_vars['charisma'].get()
+            
+            # Set starting class
+            starting_class = class_var.get()
+            self.character.classes = [{'name': starting_class, 'level': 1}]
+            self.character.character_class = starting_class
+            self.character.level = 1
+            
+            # Initialize hit points based on class
+            class_info = CLASS_DEFINITIONS.get(starting_class, CLASS_DEFINITIONS['Fighter'])
+            hit_die = class_info.get('hit_die', 10)
+            # First level gets max HP + Con modifier
+            con_mod = self.character.get_con_modifier()
+            self.character.max_hp = hit_die + con_mod
+            self.character.current_hp = self.character.max_hp
+            self.character.hit_dice = [hit_die]
+            
+            # Calculate initial stats
+            self.character.update_class_based_stats()
+            
+            result['created'] = True
+            dialog.destroy()
+        
+        def cancel():
+            dialog.destroy()
+        
+        ttk.Button(button_frame, text="Create Character", command=create_character, width=20).pack(side="left", padx=5)
+        ttk.Button(button_frame, text="Cancel", command=cancel, width=20).pack(side="left", padx=5)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Bind mouse wheel
+        self.bind_mousewheel(canvas)
+        
+        # Focus on name entry
+        name_entry.focus()
+        
+        # Wait for dialog to close
+        dialog.wait_window()
+        
+        return result['created']
     
     def save_character(self):
         """Save character to current file or prompt for location"""
@@ -362,18 +537,38 @@ class CharacterSheetGUI:
     def bind_mousewheel(self, canvas):
         """Bind mouse wheel scrolling to a canvas"""
         def on_mousewheel(event):
-            # Windows and MacOS have different scroll event values
-            if event.num == 5 or event.delta < 0:
-                # Scroll down
-                canvas.yview_scroll(1, "units")
-            elif event.num == 4 or event.delta > 0:
-                # Scroll up
-                canvas.yview_scroll(-1, "units")
+            # Check if canvas still exists
+            try:
+                if canvas.winfo_exists():
+                    # Windows and MacOS have different scroll event values
+                    if event.num == 5 or event.delta < 0:
+                        # Scroll down
+                        canvas.yview_scroll(1, "units")
+                    elif event.num == 4 or event.delta > 0:
+                        # Scroll up
+                        canvas.yview_scroll(-1, "units")
+            except:
+                # Canvas no longer exists, ignore
+                pass
         
-        # Bind for different platforms
-        canvas.bind_all("<MouseWheel>", on_mousewheel)  # Windows
-        canvas.bind_all("<Button-4>", on_mousewheel)     # Linux scroll up
-        canvas.bind_all("<Button-5>", on_mousewheel)     # Linux scroll down
+        def on_enter(event):
+            # Bind mouse wheel when mouse enters the canvas
+            canvas.bind_all("<MouseWheel>", on_mousewheel)  # Windows
+            canvas.bind_all("<Button-4>", on_mousewheel)     # Linux scroll up
+            canvas.bind_all("<Button-5>", on_mousewheel)     # Linux scroll down
+        
+        def on_leave(event):
+            # Unbind mouse wheel when mouse leaves the canvas
+            try:
+                canvas.unbind_all("<MouseWheel>")
+                canvas.unbind_all("<Button-4>")
+                canvas.unbind_all("<Button-5>")
+            except:
+                pass
+        
+        # Bind enter/leave events
+        canvas.bind("<Enter>", on_enter)
+        canvas.bind("<Leave>", on_leave)
     
     def build_main_tab(self):
         """Build the main character sheet tab"""
@@ -901,9 +1096,11 @@ class CharacterSheetGUI:
         self.character.fort_base = self.get_entry_int('fort_base', 0)
         self.character.ref_base = self.get_entry_int('ref_base', 0)
         self.character.will_base = self.get_entry_int('will_base', 0)
-        self.character.fort_misc = self.get_entry_int('fort_misc', 0)
-        self.character.ref_misc = self.get_entry_int('ref_misc', 0)
-        self.character.will_misc = self.get_entry_int('will_misc', 0)
+        # Add equipment bonuses to misc
+        resistance_bonus = self.character.get_equipment_bonus('Resistance (All Saves)')
+        self.character.fort_misc = self.get_entry_int('fort_misc', 0) + resistance_bonus + self.character.get_equipment_bonus('Fort Save')
+        self.character.ref_misc = self.get_entry_int('ref_misc', 0) + resistance_bonus + self.character.get_equipment_bonus('Ref Save')
+        self.character.will_misc = self.get_entry_int('will_misc', 0) + resistance_bonus + self.character.get_equipment_bonus('Will Save')
         
         # Update save displays
         fort = self.character.get_fortitude_save()
@@ -928,10 +1125,10 @@ class CharacterSheetGUI:
         self.labels['will_ability'].config(text=f"+{wis_mod}" if wis_mod >= 0 else str(wis_mod))
         
         # Update AC
-        self.character.armor_bonus = self.get_entry_int('armor_bonus', 0)
-        self.character.shield_bonus = self.get_entry_int('shield_bonus', 0)
-        self.character.natural_armor = self.get_entry_int('natural_armor', 0)
-        self.character.deflection_bonus = self.get_entry_int('deflection_bonus', 0)
+        self.character.armor_bonus = self.get_entry_int('armor_bonus', 0) + self.character.get_equipment_bonus('Armor')
+        self.character.shield_bonus = self.get_entry_int('shield_bonus', 0) + self.character.get_equipment_bonus('Shield')
+        self.character.natural_armor = self.get_entry_int('natural_armor', 0) + self.character.get_equipment_bonus('Natural Armor')
+        self.character.deflection_bonus = self.get_entry_int('deflection_bonus', 0) + self.character.get_equipment_bonus('Deflection')
         self.character.misc_ac_bonus = self.get_entry_int('misc_ac_bonus', 0)
         
         ac = self.character.get_ac()
@@ -1285,7 +1482,7 @@ class CharacterSheetGUI:
         
         dialog = tk.Toplevel(self.root)
         dialog.title("Level Up!")
-        dialog.geometry("450x400")
+        dialog.geometry("550x600")  # Increased size to show all content
         dialog.transient(self.root)
         dialog.grab_set()
         
@@ -1360,10 +1557,13 @@ class CharacterSheetGUI:
         
         # Preview frame
         preview_frame = ttk.LabelFrame(dialog, text="Level Up Preview", padding=10)
-        preview_frame.pack(fill='x', padx=10, pady=10)
+        preview_frame.pack(fill='both', expand=True, padx=10, pady=10)
         
-        preview_text = tk.Text(preview_frame, height=6, width=50, state='disabled')
-        preview_text.pack(fill='both', expand=True)
+        preview_text = tk.Text(preview_frame, height=8, width=50, wrap='word', state='disabled')
+        preview_scrollbar = ttk.Scrollbar(preview_frame, command=preview_text.yview)
+        preview_text.config(yscrollcommand=preview_scrollbar.set)
+        preview_text.pack(side='left', fill='both', expand=True)
+        preview_scrollbar.pack(side='right', fill='y')
         
         def update_preview():
             try:
@@ -2158,7 +2358,7 @@ class CharacterSheetGUI:
         
         columns = ('name', 'type', 'prerequisites', 'benefit')
         self.feats_tree = ttk.Treeview(feats_list_frame, columns=columns, show='headings', 
-                                       yscrollcommand=feats_scroll.set, height=8)
+                                       yscrollcommand=feats_scroll.set, height=12)
         
         self.feats_tree.heading('name', text='Feat Name')
         self.feats_tree.heading('type', text='Type')
@@ -2572,67 +2772,11 @@ class CharacterSheetGUI:
         title_label = ttk.Label(main_container, text="Magic Items", font=('Arial', 12, 'bold'))
         title_label.pack(pady=5)
         
-        # Add magic item controls
-        add_item_frame = ttk.LabelFrame(main_container, text="Add Magic Item", padding=10)
-        add_item_frame.pack(fill='x', padx=5, pady=5)
-        
-        # Row 0: Name and Type
-        ttk.Label(add_item_frame, text="Item Name:").grid(row=0, column=0, sticky='e', padx=2, pady=2)
-        self.entries['magic_item_name'] = ttk.Entry(add_item_frame, width=30)
-        self.entries['magic_item_name'].grid(row=0, column=1, columnspan=2, sticky='ew', padx=2, pady=2)
-        
-        ttk.Label(add_item_frame, text="Type:").grid(row=0, column=3, sticky='e', padx=2, pady=2)
-        item_types = ['Weapon', 'Armor', 'Shield', 'Ring', 'Wondrous Item', 'Potion', 'Scroll', 'Wand', 'Rod', 'Staff', 'Other']
-        self.entries['magic_item_type'] = ttk.Combobox(add_item_frame, width=15, values=item_types)
-        self.entries['magic_item_type'].grid(row=0, column=4, padx=2, pady=2)
-        self.entries['magic_item_type'].current(0)
-        
-        # Row 1: Slot and Caster Level
-        ttk.Label(add_item_frame, text="Slot:").grid(row=1, column=0, sticky='e', padx=2, pady=2)
-        slots = ['None', 'Head', 'Eyes', 'Neck', 'Shoulders', 'Body', 'Torso', 'Arms', 'Hands', 'Ring', 'Waist', 'Feet']
-        self.entries['magic_item_slot'] = ttk.Combobox(add_item_frame, width=12, values=slots)
-        self.entries['magic_item_slot'].grid(row=1, column=1, padx=2, pady=2)
-        self.entries['magic_item_slot'].current(0)
-        
-        ttk.Label(add_item_frame, text="Caster Level:").grid(row=1, column=2, sticky='e', padx=2, pady=2)
-        self.entries['magic_item_cl'] = ttk.Entry(add_item_frame, width=8)
-        self.entries['magic_item_cl'].grid(row=1, column=3, padx=2, pady=2)
-        self.entries['magic_item_cl'].insert(0, "1")
-        
-        ttk.Label(add_item_frame, text="Charges:").grid(row=1, column=4, sticky='e', padx=2, pady=2)
-        self.entries['magic_item_charges'] = ttk.Entry(add_item_frame, width=8)
-        self.entries['magic_item_charges'].grid(row=1, column=5, padx=2, pady=2)
-        self.entries['magic_item_charges'].insert(0, "0")
-        
-        # Row 2: Properties
-        ttk.Label(add_item_frame, text="Properties:").grid(row=2, column=0, sticky='ne', padx=2, pady=2)
-        
-        properties_frame = ttk.Frame(add_item_frame)
-        properties_frame.grid(row=2, column=1, columnspan=5, sticky='ew', padx=2, pady=2)
-        
-        self.magic_item_properties_text = tk.Text(properties_frame, height=2, width=60, wrap='word')
-        self.magic_item_properties_text.pack(side='left', fill='both', expand=True)
-        
-        properties_scroll = ttk.Scrollbar(properties_frame, command=self.magic_item_properties_text.yview)
-        properties_scroll.pack(side='right', fill='y')
-        self.magic_item_properties_text.config(yscrollcommand=properties_scroll.set)
-        
-        # Row 3: Description
-        ttk.Label(add_item_frame, text="Description:").grid(row=3, column=0, sticky='ne', padx=2, pady=2)
-        
-        desc_frame = ttk.Frame(add_item_frame)
-        desc_frame.grid(row=3, column=1, columnspan=5, sticky='ew', padx=2, pady=2)
-        
-        self.magic_item_desc_text = tk.Text(desc_frame, height=3, width=60, wrap='word')
-        self.magic_item_desc_text.pack(side='left', fill='both', expand=True)
-        
-        desc_scroll = ttk.Scrollbar(desc_frame, command=self.magic_item_desc_text.yview)
-        desc_scroll.pack(side='right', fill='y')
-        self.magic_item_desc_text.config(yscrollcommand=desc_scroll.set)
-        
-        # Add button
-        add_item_btn = ttk.Button(add_item_frame, text="Add Magic Item", command=self.add_magic_item)
-        add_item_btn.grid(row=4, column=0, columnspan=6, pady=5)
+        # Info label
+        info_label = ttk.Label(main_container, 
+                              text="Click 'Equipped' column to toggle equipment status. Double-click item for details.",
+                              font=('Arial', 9, 'italic'))
+        info_label.pack(pady=2)
         
         # Magic Items list
         list_frame = ttk.LabelFrame(main_container, text="Magic Items List", padding=10)
@@ -2644,32 +2788,40 @@ class CharacterSheetGUI:
         items_scroll = ttk.Scrollbar(items_list_frame)
         items_scroll.pack(side='right', fill='y')
         
-        columns = ('name', 'type', 'slot', 'cl', 'charges', 'properties', 'description')
+        columns = ('equipped', 'name', 'type', 'slot', 'bonuses', 'charges', 'properties')
         self.magic_items_tree = ttk.Treeview(items_list_frame, columns=columns, show='headings',
                                              yscrollcommand=items_scroll.set, height=15)
         
+        self.magic_items_tree.heading('equipped', text='Equipped')
         self.magic_items_tree.heading('name', text='Item Name')
         self.magic_items_tree.heading('type', text='Type')
         self.magic_items_tree.heading('slot', text='Slot')
-        self.magic_items_tree.heading('cl', text='CL')
+        self.magic_items_tree.heading('bonuses', text='Bonuses')
         self.magic_items_tree.heading('charges', text='Charges')
         self.magic_items_tree.heading('properties', text='Properties')
-        self.magic_items_tree.heading('description', text='Description')
         
+        self.magic_items_tree.column('equipped', width=70)
         self.magic_items_tree.column('name', width=180)
-        self.magic_items_tree.column('type', width=120)
+        self.magic_items_tree.column('type', width=100)
         self.magic_items_tree.column('slot', width=100)
-        self.magic_items_tree.column('cl', width=50)
+        self.magic_items_tree.column('bonuses', width=200)
         self.magic_items_tree.column('charges', width=80)
-        self.magic_items_tree.column('properties', width=200)
-        self.magic_items_tree.column('description', width=250)
+        self.magic_items_tree.column('properties', width=300)
         
         self.magic_items_tree.pack(side='left', fill='both', expand=True)
         items_scroll.config(command=self.magic_items_tree.yview)
         
+        # Bind double-click to show details
+        self.magic_items_tree.bind('<Double-Button-1>', self.show_magic_item_details)
+        # Bind single-click to toggle equipped
+        self.magic_items_tree.bind('<Button-1>', self.on_magic_item_click)
+        
         # Buttons
         btn_frame = ttk.Frame(list_frame)
         btn_frame.pack(fill='x', pady=5)
+        
+        add_item_btn = ttk.Button(btn_frame, text="Create New Item", command=self.show_create_magic_item_dialog)
+        add_item_btn.pack(side='left', padx=2)
         
         use_charge_btn = ttk.Button(btn_frame, text="Use Charge (-1)", command=self.use_magic_item_charge)
         use_charge_btn.pack(side='left', padx=2)
@@ -2677,48 +2829,187 @@ class CharacterSheetGUI:
         recharge_btn = ttk.Button(btn_frame, text="Recharge", command=self.recharge_magic_item)
         recharge_btn.pack(side='left', padx=2)
         
-        remove_item_btn = ttk.Button(btn_frame, text="Remove Selected Item", command=self.remove_magic_item)
+        remove_item_btn = ttk.Button(btn_frame, text="Remove Selected", command=self.remove_magic_item)
         remove_item_btn.pack(side='left', padx=2)
     
-    def add_magic_item(self):
-        """Add a magic item to the character"""
-        name = self.entries['magic_item_name'].get().strip()
-        if not name:
-            messagebox.showwarning("Missing Information", "Please enter an item name.")
-            return
+    def show_create_magic_item_dialog(self):
+        """Show dialog to create a new magic item with bonuses"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Create Magic Item")
+        dialog.geometry("700x650")
+        dialog.transient(self.root)
+        dialog.grab_set()
         
-        try:
-            caster_level = int(self.entries['magic_item_cl'].get())
-            charges = int(self.entries['magic_item_charges'].get())
-        except ValueError:
-            messagebox.showwarning("Invalid Input", "Caster Level and Charges must be numbers.")
-            return
+        # Scrollable content
+        canvas = tk.Canvas(dialog)
+        scrollbar = ttk.Scrollbar(dialog, orient="vertical", command=canvas.yview)
+        content_frame = ttk.Frame(canvas)
         
-        properties = self.magic_item_properties_text.get('1.0', 'end-1c').strip()
-        description = self.magic_item_desc_text.get('1.0', 'end-1c').strip()
+        content_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=content_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
         
-        magic_item = {
-            'name': name,
-            'type': self.entries['magic_item_type'].get(),
-            'slot': self.entries['magic_item_slot'].get(),
-            'caster_level': caster_level,
-            'description': description,
-            'properties': properties,
-            'charges': charges,
-            'max_charges': charges
-        }
+        # Title
+        ttk.Label(content_frame, text="Create Magic Item", font=('TkDefaultFont', 14, 'bold')).pack(pady=10)
         
-        self.character.magic_items.append(magic_item)
-        self.refresh_magic_items()
+        # Basic Info Frame
+        basic_frame = ttk.LabelFrame(content_frame, text="Basic Information", padding=10)
+        basic_frame.pack(fill='x', padx=20, pady=5)
         
-        # Clear inputs
-        self.entries['magic_item_name'].delete(0, 'end')
-        self.entries['magic_item_cl'].delete(0, 'end')
-        self.entries['magic_item_cl'].insert(0, "1")
-        self.entries['magic_item_charges'].delete(0, 'end')
-        self.entries['magic_item_charges'].insert(0, "0")
-        self.magic_item_properties_text.delete('1.0', 'end')
-        self.magic_item_desc_text.delete('1.0', 'end')
+        ttk.Label(basic_frame, text="Item Name:").grid(row=0, column=0, sticky='e', padx=5, pady=3)
+        name_var = tk.StringVar()
+        ttk.Entry(basic_frame, textvariable=name_var, width=40).grid(row=0, column=1, columnspan=3, sticky='ew', padx=5, pady=3)
+        
+        ttk.Label(basic_frame, text="Type:").grid(row=1, column=0, sticky='e', padx=5, pady=3)
+        item_types = ['Weapon', 'Armor', 'Shield', 'Ring', 'Wondrous Item', 'Potion', 'Scroll', 'Wand', 'Rod', 'Staff', 'Other']
+        type_var = tk.StringVar(value='Wondrous Item')
+        ttk.Combobox(basic_frame, textvariable=type_var, values=item_types, width=15).grid(row=1, column=1, sticky='w', padx=5, pady=3)
+        
+        ttk.Label(basic_frame, text="Slot:").grid(row=1, column=2, sticky='e', padx=5, pady=3)
+        slots = ['None', 'Head', 'Eyes', 'Neck', 'Shoulders', 'Body', 'Torso', 'Arms', 'Hands', 'Ring', 'Waist', 'Feet']
+        slot_var = tk.StringVar(value='None')
+        ttk.Combobox(basic_frame, textvariable=slot_var, values=slots, width=12).grid(row=1, column=3, sticky='w', padx=5, pady=3)
+        
+        ttk.Label(basic_frame, text="Caster Level:").grid(row=2, column=0, sticky='e', padx=5, pady=3)
+        cl_var = tk.IntVar(value=1)
+        ttk.Spinbox(basic_frame, from_=1, to=40, textvariable=cl_var, width=8).grid(row=2, column=1, sticky='w', padx=5, pady=3)
+        
+        ttk.Label(basic_frame, text="Charges:").grid(row=2, column=2, sticky='e', padx=5, pady=3)
+        charges_var = tk.IntVar(value=0)
+        ttk.Spinbox(basic_frame, from_=0, to=100, textvariable=charges_var, width=8).grid(row=2, column=3, sticky='w', padx=5, pady=3)
+        
+        # Bonuses Frame
+        bonuses_frame = ttk.LabelFrame(content_frame, text="Bonuses (Affects Character Stats When Equipped)", padding=10)
+        bonuses_frame.pack(fill='both', expand=True, padx=20, pady=5)
+        
+        bonus_list = []  # List to track bonuses
+        
+        # Bonus types available
+        bonus_types = [
+            'Armor', 'Shield', 'Natural Armor', 'Deflection',
+            'Resistance (All Saves)', 'Fort Save', 'Ref Save', 'Will Save',
+            'Attack Bonus', 'Damage Bonus',
+            'Strength', 'Dexterity', 'Constitution', 'Intelligence', 'Wisdom', 'Charisma',
+            'Spell Resistance', 'Initiative',
+            'Skill Bonus (All)', 'Speed Bonus'
+        ]
+        
+        # Bonuses list display
+        bonus_tree_frame = ttk.Frame(bonuses_frame)
+        bonus_tree_frame.pack(fill='both', expand=True)
+        
+        bonus_tree = ttk.Treeview(bonus_tree_frame, columns=('type', 'value'), show='headings', height=6)
+        bonus_tree.heading('type', text='Bonus Type')
+        bonus_tree.heading('value', text='Value')
+        bonus_tree.column('type', width=250)
+        bonus_tree.column('value', width=100)
+        bonus_tree.pack(side='left', fill='both', expand=True)
+        
+        bonus_scroll = ttk.Scrollbar(bonus_tree_frame, command=bonus_tree.yview)
+        bonus_scroll.pack(side='right', fill='y')
+        bonus_tree.config(yscrollcommand=bonus_scroll.set)
+        
+        # Add bonus controls
+        add_bonus_frame = ttk.Frame(bonuses_frame)
+        add_bonus_frame.pack(fill='x', pady=5)
+        
+        ttk.Label(add_bonus_frame, text="Type:").pack(side='left', padx=2)
+        bonus_type_var = tk.StringVar(value=bonus_types[0])
+        ttk.Combobox(add_bonus_frame, textvariable=bonus_type_var, values=bonus_types, width=20).pack(side='left', padx=2)
+        
+        ttk.Label(add_bonus_frame, text="Value:").pack(side='left', padx=2)
+        bonus_value_var = tk.IntVar(value=1)
+        ttk.Spinbox(add_bonus_frame, from_=-10, to=20, textvariable=bonus_value_var, width=8).pack(side='left', padx=2)
+        
+        def add_bonus():
+            bonus_type = bonus_type_var.get()
+            bonus_value = bonus_value_var.get()
+            bonus_list.append({'type': bonus_type, 'value': bonus_value})
+            bonus_tree.insert('', 'end', values=(bonus_type, f"+{bonus_value}" if bonus_value >= 0 else str(bonus_value)))
+        
+        def remove_bonus():
+            selection = bonus_tree.selection()
+            if selection:
+                index = bonus_tree.index(selection[0])
+                del bonus_list[index]
+                bonus_tree.delete(selection[0])
+        
+        ttk.Button(add_bonus_frame, text="Add Bonus", command=add_bonus).pack(side='left', padx=2)
+        ttk.Button(add_bonus_frame, text="Remove Selected", command=remove_bonus).pack(side='left', padx=2)
+        
+        # Properties Frame
+        prop_frame = ttk.LabelFrame(content_frame, text="Special Properties/Abilities", padding=10)
+        prop_frame.pack(fill='x', padx=20, pady=5)
+        
+        prop_text = tk.Text(prop_frame, height=4, width=60, wrap='word')
+        prop_scroll = ttk.Scrollbar(prop_frame, command=prop_text.yview)
+        prop_text.config(yscrollcommand=prop_scroll.set)
+        prop_text.pack(side='left', fill='both', expand=True)
+        prop_scroll.pack(side='right', fill='y')
+        
+        # Description Frame
+        desc_frame = ttk.LabelFrame(content_frame, text="Description", padding=10)
+        desc_frame.pack(fill='x', padx=20, pady=5)
+        
+        desc_text = tk.Text(desc_frame, height=3, width=60, wrap='word')
+        desc_scroll = ttk.Scrollbar(desc_frame, command=desc_text.yview)
+        desc_text.config(yscrollcommand=desc_scroll.set)
+        desc_text.pack(side='left', fill='both', expand=True)
+        desc_scroll.pack(side='right', fill='y')
+        
+        # Buttons
+        btn_frame = ttk.Frame(content_frame)
+        btn_frame.pack(pady=10)
+        
+        def create_item():
+            name = name_var.get().strip()
+            if not name:
+                messagebox.showwarning("Missing Name", "Please enter an item name.", parent=dialog)
+                return
+            
+            magic_item = {
+                'name': name,
+                'type': type_var.get(),
+                'slot': slot_var.get(),
+                'caster_level': cl_var.get(),
+                'charges': charges_var.get(),
+                'max_charges': charges_var.get(),
+                'properties': prop_text.get('1.0', 'end-1c').strip(),
+                'description': desc_text.get('1.0', 'end-1c').strip(),
+                'bonuses': bonus_list.copy(),
+                'equipped': False
+            }
+            
+            self.character.magic_items.append(magic_item)
+            self.refresh_magic_items()
+            self.update_all_calculated_fields()  # Update stats in case item affects them
+            dialog.destroy()
+        
+        ttk.Button(btn_frame, text="Create Item", command=create_item, width=15).pack(side='left', padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=15).pack(side='left', padx=5)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        self.bind_mousewheel(canvas)
+    
+    def on_magic_item_click(self, event):
+        """Handle clicks on magic item tree - toggle equipped status if clicking equipped column"""
+        region = self.magic_items_tree.identify_region(event.x, event.y)
+        if region == "cell":
+            column = self.magic_items_tree.identify_column(event.x)
+            if column == '#1':  # Equipped column
+                row_id = self.magic_items_tree.identify_row(event.y)
+                if row_id:
+                    item = self.magic_items_tree.item(row_id)
+                    item_name = item['values'][1]  # Name is second column now
+                    
+                    # Toggle equipped status
+                    for magic_item in self.character.magic_items:
+                        if magic_item['name'] == item_name:
+                            magic_item['equipped'] = not magic_item.get('equipped', False)
+                            self.refresh_magic_items()
+                            self.update_all_calculated_fields()  # Recalculate stats
+                            break
     
     def remove_magic_item(self):
         """Remove the selected magic item"""
@@ -2728,7 +3019,7 @@ class CharacterSheetGUI:
             return
         
         item = self.magic_items_tree.item(selection[0])
-        item_name = item['values'][0]
+        item_name = item['values'][1]  # Name is second column now
         
         # Find and remove the item
         for i, magic_item in enumerate(self.character.magic_items):
@@ -2737,6 +3028,7 @@ class CharacterSheetGUI:
                 break
         
         self.refresh_magic_items()
+        self.update_all_calculated_fields()  # Recalculate stats
     
     def use_magic_item_charge(self):
         """Use one charge from a magic item"""
@@ -2746,7 +3038,7 @@ class CharacterSheetGUI:
             return
         
         item = self.magic_items_tree.item(selection[0])
-        item_name = item['values'][0]
+        item_name = item['values'][1]  # Name is second column now
         
         # Find and update the item
         for magic_item in self.character.magic_items:
@@ -2766,7 +3058,7 @@ class CharacterSheetGUI:
             return
         
         item = self.magic_items_tree.item(selection[0])
-        item_name = item['values'][0]
+        item_name = item['values'][1]  # Name is second column now
         
         # Find and update the item
         for magic_item in self.character.magic_items:
@@ -2774,6 +3066,110 @@ class CharacterSheetGUI:
                 magic_item['charges'] = magic_item['max_charges']
                 self.refresh_magic_items()
                 break
+    
+    def show_magic_item_details(self, event=None):
+        """Show detailed information about a magic item in a dialog"""
+        selection = self.magic_items_tree.selection()
+        if not selection:
+            return
+        
+        item = self.magic_items_tree.item(selection[0])
+        item_name = item['values'][1]  # Name is second column now
+        
+        # Find the full item data
+        magic_item = None
+        for mi in self.character.magic_items:
+            if mi['name'] == item_name:
+                magic_item = mi
+                break
+        
+        if not magic_item:
+            return
+        
+        # Create detail dialog
+        detail_dialog = tk.Toplevel(self.root)
+        detail_dialog.title(f"Magic Item: {magic_item['name']}")
+        detail_dialog.geometry("600x500")
+        detail_dialog.transient(self.root)
+        
+        # Create scrollable frame
+        canvas = tk.Canvas(detail_dialog)
+        scrollbar = ttk.Scrollbar(detail_dialog, orient="vertical", command=canvas.yview)
+        content_frame = ttk.Frame(canvas)
+        
+        content_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=content_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Title
+        title_label = ttk.Label(content_frame, text=magic_item['name'], 
+                               font=('TkDefaultFont', 14, 'bold'))
+        title_label.pack(pady=10, padx=20, anchor='w')
+        
+        # Basic info frame
+        info_frame = ttk.LabelFrame(content_frame, text="Basic Information", padding=10)
+        info_frame.pack(fill='x', padx=20, pady=5)
+        
+        info_text = f"""Type: {magic_item.get('type', 'Other')}
+Slot: {magic_item.get('slot', 'None')}
+Caster Level: {magic_item.get('caster_level', 1)}
+Charges: {magic_item.get('charges', 0)}/{magic_item.get('max_charges', 0)}
+Equipped: {'Yes' if magic_item.get('equipped', False) else 'No'}"""
+        
+        ttk.Label(info_frame, text=info_text, justify='left').pack(anchor='w')
+        
+        # Bonuses frame
+        if magic_item.get('bonuses'):
+            bonus_frame = ttk.LabelFrame(content_frame, text="Bonuses (Active When Equipped)", padding=10)
+            bonus_frame.pack(fill='x', padx=20, pady=5)
+            
+            for bonus in magic_item['bonuses']:
+                bonus_text = f"{bonus['type']}: {'+' if bonus['value'] >= 0 else ''}{bonus['value']}"
+                ttk.Label(bonus_frame, text=bonus_text, foreground='blue').pack(anchor='w', pady=2)
+        
+        # Properties frame
+        if magic_item.get('properties'):
+            prop_frame = ttk.LabelFrame(content_frame, text="Special Properties", padding=10)
+            prop_frame.pack(fill='both', expand=True, padx=20, pady=5)
+            
+            prop_text = tk.Text(prop_frame, height=10, width=60, wrap='word')
+            prop_scrollbar = ttk.Scrollbar(prop_frame, command=prop_text.yview)
+            prop_text.config(yscrollcommand=prop_scrollbar.set)
+            
+            prop_text.insert('1.0', magic_item['properties'])
+            prop_text.config(state='disabled')
+            
+            prop_text.pack(side='left', fill='both', expand=True)
+            prop_scrollbar.pack(side='right', fill='y')
+        
+        # Description frame
+        if magic_item.get('description'):
+            desc_frame = ttk.LabelFrame(content_frame, text="Description", padding=10)
+            desc_frame.pack(fill='both', expand=True, padx=20, pady=5)
+            
+            desc_text = tk.Text(desc_frame, height=8, width=60, wrap='word')
+            desc_scrollbar = ttk.Scrollbar(desc_frame, command=desc_text.yview)
+            desc_text.config(yscrollcommand=desc_scrollbar.set)
+            
+            desc_text.insert('1.0', magic_item['description'])
+            desc_text.config(state='disabled')
+            
+            desc_text.pack(side='left', fill='both', expand=True)
+            desc_scrollbar.pack(side='right', fill='y')
+        
+        # Close button
+        ttk.Button(content_frame, text="Close", 
+                  command=detail_dialog.destroy, width=15).pack(pady=10)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Bind mouse wheel
+        self.bind_mousewheel(canvas)
     
     def refresh_magic_items(self):
         """Refresh the magic items display"""
@@ -2783,25 +3179,36 @@ class CharacterSheetGUI:
         
         # Repopulate
         for magic_item in self.character.magic_items:
-            # Truncate long text for display
+            # Equipped status
+            equipped = '✓' if magic_item.get('equipped', False) else ''
+            
+            # Bonuses summary
+            bonuses_text = ''
+            if magic_item.get('bonuses'):
+                bonus_strs = []
+                for bonus in magic_item['bonuses'][:3]:  # Show first 3 bonuses
+                    value = bonus['value']
+                    bonus_strs.append(f"{bonus['type']} {'+' if value >= 0 else ''}{value}")
+                bonuses_text = ', '.join(bonus_strs)
+                if len(magic_item['bonuses']) > 3:
+                    bonuses_text += '...'
+            
+            # Properties - convert newlines to separators
             properties = magic_item.get('properties', '')
-            if len(properties) > 50:
-                properties = properties[:47] + '...'
+            properties = properties.replace('\n', ' | ')
+            if len(properties) > 80:
+                properties = properties[:77] + '...'
             
-            description = magic_item.get('description', '')
-            if len(description) > 50:
-                description = description[:47] + '...'
-            
-            charges_text = f"{magic_item.get('charges', 0)}/{magic_item.get('max_charges', 0)}"
+            charges_text = f"{magic_item.get('charges', 0)}/{magic_item.get('max_charges', 0)}" if magic_item.get('max_charges', 0) > 0 else ''
             
             self.magic_items_tree.insert('', 'end', values=(
+                equipped,
                 magic_item['name'],
                 magic_item.get('type', 'Other'),
                 magic_item.get('slot', 'None'),
-                magic_item.get('caster_level', 1),
+                bonuses_text,
                 charges_text,
-                properties,
-                description
+                properties
             ))
     
     def add_weapon(self):
