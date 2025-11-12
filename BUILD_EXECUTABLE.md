@@ -5,9 +5,11 @@
 ### Quick Build
 
 Simply double-click `build_executable.bat` - this will:
+
 1. Install PyInstaller (if needed)
-2. Build the executable
-3. Place it in the `dist` folder
+2. Convert the icon (DnD_icon.png → DnD_icon.ico) if needed
+3. Build the executable with the D&D icon
+4. Place it in the `dist` folder
 
 ### Manual Build
 
@@ -15,34 +17,48 @@ Simply double-click `build_executable.bat` - this will:
 # Install PyInstaller
 pip install pyinstaller
 
-# Build single executable file
-pyinstaller --onefile --windowed --name "DnD_CharacterSheet" character_sheet_gui.py
+# Install Pillow for icon conversion (if needed)
+pip install pillow
+
+# Convert icon (only needed once)
+python convert_icon.py
+
+# Build single executable file with icon
+pyinstaller --onefile --windowed --icon=DnD_icon.ico --name "DnD_CharacterSheet" character_sheet_gui.py
 ```
 
-The executable will be in the `dist` folder. You can move it anywhere and double-click to run!
+The executable will be in the `dist` folder with the D&D icon. You can move it anywhere and double-click to run!
 
 ### Build Options
 
 **Basic (smallest file, but slower startup):**
+
 ```bash
 pyinstaller --onefile --windowed character_sheet_gui.py
 ```
 
 **With folder (larger, but faster startup):**
+
 ```bash
 pyinstaller --windowed character_sheet_gui.py
 ```
 
-**With custom icon:**
+**With custom icon (already configured):**
+
 ```bash
-pyinstaller --onefile --windowed --icon=icon.ico character_sheet_gui.py
+pyinstaller --onefile --windowed --icon=DnD_icon.ico character_sheet_gui.py
 ```
 
-### Add an Icon (Optional)
+### Icon Information
 
-1. Find or create a `.ico` file for your application
-2. Save it as `icon.ico` in the project folder
-3. Run the build with `--icon=icon.ico` option
+The project includes:
+
+- `DnD_icon.png` - Source icon image
+- `DnD_icon.ico` - Windows icon file (auto-generated)
+- `convert_icon.py` - Script to convert PNG to ICO format
+
+The icon is automatically applied when using `build_executable.bat`.
+If you want to use a different icon, replace `DnD_icon.jpg` and delete `DnD_icon.ico`, then rebuild.
 
 ## Method 2: Auto-py-to-exe (GUI Tool)
 
@@ -54,8 +70,9 @@ auto-py-to-exe
 ```
 
 Then:
+
 1. Select `character_sheet_gui.py` as the script
-2. Choose "One File" 
+2. Choose "One File"
 3. Choose "Window Based" (no console)
 4. Click "Convert .py to .exe"
 
@@ -71,6 +88,7 @@ python setup.py build
 ## Distribution
 
 After building:
+
 - The `.exe` file in the `dist` folder is standalone
 - No Python installation needed on other computers
 - Just double-click to run!
