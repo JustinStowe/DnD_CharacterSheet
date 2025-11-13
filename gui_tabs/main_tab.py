@@ -303,6 +303,15 @@ class MainTab(BaseTab):
             self.entries[f'{save_key}_misc'].insert(0, "0")
             self.entries[f'{save_key}_misc'].bind(
                 '<FocusOut>', lambda e: self.gui.update_all_calculated_fields())
+            
+            # Magic bonus label (initially empty)
+            magic_label_key = f'{save_key}_magic'
+            self.labels[magic_label_key] = ttk.Label(
+                saves_frame, text="", foreground='blue', font=('Arial', 10, 'bold'))
+            self.labels[magic_label_key].grid(row=i, column=8, sticky='w', padx=2)
+        
+        # Initialize save magic bonuses display (will show when items are equipped)
+        self.update_save_components(0)
 
         # Add attack bonuses to saves frame
         ttk.Label(saves_frame, text="").grid(row=3, column=0, pady=5)  # Spacer
@@ -416,6 +425,15 @@ class MainTab(BaseTab):
                 self.entries[comp_key].insert(0, "0")
                 self.entries[comp_key].bind(
                     '<FocusOut>', lambda e: self.gui.update_all_calculated_fields())
+            
+            # Add label to show magic item bonus for ALL components
+            magic_label_key = f'{comp_key}_magic'
+            self.labels[magic_label_key] = ttk.Label(
+                ac_frame, text="", foreground='blue', font=('Arial', 10, 'bold'))
+            self.labels[magic_label_key].grid(row=i + 1, column=2, sticky='w', padx=2)
+        
+        # Initialize magic bonuses display (will show when items are equipped)
+        self.update_ac_components(0, 0, 0, 0)
 
         # Touch and Flat-footed AC
         ttk.Label(
@@ -1613,3 +1631,31 @@ class MainTab(BaseTab):
             weight_text,
             notes
         ))
+    
+    def update_ac_components(self, magic_armor, magic_shield, magic_natural, magic_deflection):
+        """Update AC component displays to show magic item bonuses"""
+        # Update the magic bonus labels to show what's being added from equipment
+        bonus_mapping = {
+            'armor_bonus_magic': magic_armor,
+            'shield_bonus_magic': magic_shield,
+            'natural_armor_magic': magic_natural,
+            'deflection_bonus_magic': magic_deflection
+        }
+        
+        for label_key, bonus_value in bonus_mapping.items():
+            if label_key in self.labels:
+                if bonus_value > 0:
+                    self.labels[label_key].config(text=f"+{bonus_value} (magic)", foreground='blue')
+                else:
+                    self.labels[label_key].config(text="")
+    
+    def update_save_components(self, magic_resistance):
+        """Update saving throw displays to show magic item bonuses"""
+        # Update magic bonus labels for all three saves
+        for save_key in ['fort', 'ref', 'will']:
+            label_key = f'{save_key}_magic'
+            if label_key in self.labels:
+                if magic_resistance > 0:
+                    self.labels[label_key].config(text=f"+{magic_resistance} (magic)", foreground='blue')
+                else:
+                    self.labels[label_key].config(text="")

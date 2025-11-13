@@ -619,30 +619,53 @@ class Character:
     
     def get_fortitude_save(self):
         """Calculate total Fortitude save"""
-        return self.fort_base + self.get_con_modifier() + self.fort_misc
+        magic_resistance = self.get_equipment_bonus('Resistance (All Saves)')
+        return self.fort_base + self.get_con_modifier() + self.fort_misc + magic_resistance
     
     def get_reflex_save(self):
         """Calculate total Reflex save"""
-        return self.ref_base + self.get_dex_modifier() + self.ref_misc
+        magic_resistance = self.get_equipment_bonus('Resistance (All Saves)')
+        return self.ref_base + self.get_dex_modifier() + self.ref_misc + magic_resistance
     
     def get_will_save(self):
         """Calculate total Will save"""
-        return self.will_base + self.get_wis_modifier() + self.will_misc
+        magic_resistance = self.get_equipment_bonus('Resistance (All Saves)')
+        return self.will_base + self.get_wis_modifier() + self.will_misc + magic_resistance
     
     def get_ac(self):
         """Calculate total Armor Class"""
-        return (10 + self.armor_bonus + self.shield_bonus + 
-                self.get_dex_modifier() + self.natural_armor + 
-                self.deflection_bonus + self.misc_ac_bonus)
+        # Get bonuses from magic items
+        magic_armor = self.get_equipment_bonus('Armor')
+        magic_shield = self.get_equipment_bonus('Shield')
+        magic_natural = self.get_equipment_bonus('Natural Armor')
+        magic_deflection = self.get_equipment_bonus('Deflection')
+        
+        return (10 + self.armor_bonus + magic_armor + 
+                self.shield_bonus + magic_shield + 
+                self.get_dex_modifier() + 
+                self.natural_armor + magic_natural + 
+                self.deflection_bonus + magic_deflection + 
+                self.misc_ac_bonus)
     
     def get_touch_ac(self):
         """Calculate Touch AC (no armor/shield/natural)"""
-        return 10 + self.get_dex_modifier() + self.deflection_bonus + self.misc_ac_bonus
+        magic_deflection = self.get_equipment_bonus('Deflection')
+        return (10 + self.get_dex_modifier() + 
+                self.deflection_bonus + magic_deflection + 
+                self.misc_ac_bonus)
     
     def get_flat_footed_ac(self):
         """Calculate Flat-footed AC (no dex bonus)"""
-        return (10 + self.armor_bonus + self.shield_bonus + 
-                self.natural_armor + self.deflection_bonus + self.misc_ac_bonus)
+        magic_armor = self.get_equipment_bonus('Armor')
+        magic_shield = self.get_equipment_bonus('Shield')
+        magic_natural = self.get_equipment_bonus('Natural Armor')
+        magic_deflection = self.get_equipment_bonus('Deflection')
+        
+        return (10 + self.armor_bonus + magic_armor + 
+                self.shield_bonus + magic_shield + 
+                self.natural_armor + magic_natural + 
+                self.deflection_bonus + magic_deflection + 
+                self.misc_ac_bonus)
     
     def get_initiative(self):
         """Calculate initiative"""

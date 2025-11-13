@@ -512,6 +512,21 @@ class CharacterSheetGUI:
         self.character.max_hp = self.get_entry_int('max_hp', 0)
         self.character.current_hp = self.get_entry_int('current_hp', 0)
         
+        # AC components - read base values only (not including magic bonuses)
+        self.character.armor_bonus = self.get_entry_int('armor_bonus', 0)
+        self.character.shield_bonus = self.get_entry_int('shield_bonus', 0)
+        self.character.natural_armor = self.get_entry_int('natural_armor', 0)
+        self.character.deflection_bonus = self.get_entry_int('deflection_bonus', 0)
+        self.character.misc_ac_bonus = self.get_entry_int('misc_ac_bonus', 0)
+        
+        # Saving throw components - read base values only (not including magic bonuses)
+        self.character.fort_base = self.get_entry_int('fort_base', 0)
+        self.character.fort_misc = self.get_entry_int('fort_misc', 0)
+        self.character.ref_base = self.get_entry_int('ref_base', 0)
+        self.character.ref_misc = self.get_entry_int('ref_misc', 0)
+        self.character.will_base = self.get_entry_int('will_base', 0)
+        self.character.will_misc = self.get_entry_int('will_misc', 0)
+        
         # Skills and other fields are already updated through their handlers
     
     def populate_fields_from_character(self):
@@ -600,11 +615,17 @@ class CharacterSheetGUI:
             self.update_feats_display()
             self.update_abilities_display()
         
-        # Weapons and Magic Items
+        # Weapons and Magic Items (delegate to tabs if available)
         if hasattr(self, 'weapons_tree'):
             self.refresh_weapons()
-        if hasattr(self, 'magic_items_tree'):
-            self.refresh_magic_items()
+        if hasattr(self, 'magic_items_tab') and hasattr(self.magic_items_tab, 'update'):
+            self.magic_items_tab.update()
+        
+        # Update AC display to show magic item bonuses
+        self.update_ac_display()
+        
+        # Update saving throw display to show magic item bonuses
+        self.update_saves_display()
     
     def set_entry(self, key, value):
         """Set the value of an entry widget"""
@@ -726,15 +747,13 @@ class CharacterSheetGUI:
             self.labels[f'{ability}_mod'].config(text=mod_str)
         
         # Update saving throws
-        # First update character model with base and misc values
+        # Read base values only from entry fields (not including magic bonuses)
         self.character.fort_base = self.get_entry_int('fort_base', 0)
         self.character.ref_base = self.get_entry_int('ref_base', 0)
         self.character.will_base = self.get_entry_int('will_base', 0)
-        # Add equipment bonuses to misc
-        resistance_bonus = self.character.get_equipment_bonus('Resistance (All Saves)')
-        self.character.fort_misc = self.get_entry_int('fort_misc', 0) + resistance_bonus + self.character.get_equipment_bonus('Fort Save')
-        self.character.ref_misc = self.get_entry_int('ref_misc', 0) + resistance_bonus + self.character.get_equipment_bonus('Ref Save')
-        self.character.will_misc = self.get_entry_int('will_misc', 0) + resistance_bonus + self.character.get_equipment_bonus('Will Save')
+        self.character.fort_misc = self.get_entry_int('fort_misc', 0)
+        self.character.ref_misc = self.get_entry_int('ref_misc', 0)
+        self.character.will_misc = self.get_entry_int('will_misc', 0)
         
         # Update save displays
         fort = self.character.get_fortitude_save()
@@ -758,11 +777,12 @@ class CharacterSheetGUI:
         self.labels['ref_ability'].config(text=f"+{dex_mod}" if dex_mod >= 0 else str(dex_mod))
         self.labels['will_ability'].config(text=f"+{wis_mod}" if wis_mod >= 0 else str(wis_mod))
         
-        # Update AC
-        self.character.armor_bonus = self.get_entry_int('armor_bonus', 0) + self.character.get_equipment_bonus('Armor')
-        self.character.shield_bonus = self.get_entry_int('shield_bonus', 0) + self.character.get_equipment_bonus('Shield')
-        self.character.natural_armor = self.get_entry_int('natural_armor', 0) + self.character.get_equipment_bonus('Natural Armor')
-        self.character.deflection_bonus = self.get_entry_int('deflection_bonus', 0) + self.character.get_equipment_bonus('Deflection')
+        # Update AC - only read base values from entry fields
+        # Equipment bonuses are added separately in get_ac()
+        self.character.armor_bonus = self.get_entry_int('armor_bonus', 0)
+        self.character.shield_bonus = self.get_entry_int('shield_bonus', 0)
+        self.character.natural_armor = self.get_entry_int('natural_armor', 0)
+        self.character.deflection_bonus = self.get_entry_int('deflection_bonus', 0)
         self.character.misc_ac_bonus = self.get_entry_int('misc_ac_bonus', 0)
         
         ac = self.character.get_ac()
@@ -795,6 +815,12 @@ class CharacterSheetGUI:
         if hasattr(self, 'skills_tab') and hasattr(self.skills_tab, 'refresh_skills_display'):
             self.skills_tab.refresh_skills_display()
         
+        # Update AC displays
+        self.update_ac_display()
+        
+        # Update saving throw displays
+        self.update_saves_display()
+        
         # Update spell DCs (if spells tab exists)
         if hasattr(self, 'spells_tree'):
             self.update_spell_dcs()
@@ -802,12 +828,177 @@ class CharacterSheetGUI:
         # Update weapons display (attack bonuses depend on BAB and ability scores)
         if hasattr(self, 'weapons_tree'):
             self.refresh_weapons()
+    
+    def update_ac_display(self):
+        """Update all AC-related displays"""
+        # Only update if labels exist (they may not be created yet during init)
+        if 'ac_total' not in self.labels:
+            return
+            
+        # Calculate AC values
+        ac = self.character.get_ac()
+        touch_ac = self.character.get_touch_ac()
+        flat_footed_ac = self.character.get_flat_footed_ac()
+        
+        # Update total AC labels
+        self.labels['ac_total'].config(text=str(ac))
+        if 'touch_ac' in self.labels:
+            self.labels['touch_ac'].config(text=str(touch_ac))
+        if 'flatfooted_ac' in self.labels:
+            self.labels['flatfooted_ac'].config(text=str(flat_footed_ac))
+        
+        # Update individual component labels to show magic bonuses
+        magic_armor = self.character.get_equipment_bonus('Armor')
+        magic_shield = self.character.get_equipment_bonus('Shield')
+        magic_natural = self.character.get_equipment_bonus('Natural Armor')
+        magic_deflection = self.character.get_equipment_bonus('Deflection')
+        
+        # Update magic bonus display labels
+        if hasattr(self, 'main_tab') and hasattr(self.main_tab, 'update_ac_components'):
+            self.main_tab.update_ac_components(magic_armor, magic_shield, magic_natural, magic_deflection)
+    
+    def update_saves_display(self):
+        """Update all saving throw displays including magic bonuses"""
+        # Only update if labels exist
+        if 'fort_total' not in self.labels:
+            return
+        
+        # Calculate saving throw values
+        fort = self.character.get_fortitude_save()
+        ref = self.character.get_reflex_save()
+        will = self.character.get_will_save()
+        
+        # Update total saving throw labels
+        self.labels['fort_total'].config(text=f"+{fort}" if fort >= 0 else str(fort))
+        self.labels['ref_total'].config(text=f"+{ref}" if ref >= 0 else str(ref))
+        self.labels['will_total'].config(text=f"+{will}" if will >= 0 else str(will))
+        
+        # Get magic resistance bonus
+        magic_resistance = self.character.get_equipment_bonus('Resistance (All Saves)')
+        
+        # Update magic bonus display labels
+        if hasattr(self, 'main_tab') and hasattr(self.main_tab, 'update_save_components'):
+            self.main_tab.update_save_components(magic_resistance)
+
+
+def show_startup_dialog():
+    """Show startup dialog to choose between new character or load existing"""
+    # Create a temporary root window for the dialog
+    temp_root = tk.Tk()
+    temp_root.withdraw()
+    
+    dialog = tk.Toplevel(temp_root)
+    dialog.title("D&D 3e Character Sheet")
+    dialog.geometry("400x200")
+    
+    # Center the dialog
+    dialog.update_idletasks()
+    x = (dialog.winfo_screenwidth() // 2) - (dialog.winfo_width() // 2)
+    y = (dialog.winfo_screenheight() // 2) - (dialog.winfo_height() // 2)
+    dialog.geometry(f"+{x}+{y}")
+    
+    # Variable to store user choice
+    choice = {'action': None, 'file': None}
+    
+    # Title
+    ttk.Label(
+        dialog,
+        text="D&D 3rd Edition Character Sheet",
+        font=('TkDefaultFont', 16, 'bold')
+    ).pack(pady=20)
+    
+    ttk.Label(
+        dialog,
+        text="What would you like to do?",
+        font=('TkDefaultFont', 12)
+    ).pack(pady=10)
+    
+    # Button frame
+    button_frame = ttk.Frame(dialog)
+    button_frame.pack(pady=20)
+    
+    def new_character():
+        choice['action'] = 'new'
+        dialog.destroy()
+        temp_root.quit()
+    
+    def load_character():
+        filename = filedialog.askopenfilename(
+            defaultextension=".json",
+            filetypes=[("Character Files", "*.json"), ("All Files", "*.*")],
+            title="Load Character"
+        )
+        if filename:
+            choice['action'] = 'load'
+            choice['file'] = filename
+            dialog.destroy()
+            temp_root.quit()
+    
+    def on_close():
+        choice['action'] = None
+        dialog.destroy()
+        temp_root.quit()
+    
+    dialog.protocol("WM_DELETE_WINDOW", on_close)
+    
+    # New Character button
+    ttk.Button(
+        button_frame,
+        text="Create New Character",
+        command=new_character,
+        width=25
+    ).pack(side='left', padx=10)
+    
+    # Load Character button
+    ttk.Button(
+        button_frame,
+        text="Load Existing Character",
+        command=load_character,
+        width=25
+    ).pack(side='left', padx=10)
+    
+    # Run the dialog
+    temp_root.mainloop()
+    
+    # Store choice before destroying
+    result = choice.copy()
+    
+    # Properly destroy everything
+    try:
+        dialog.destroy()
+    except:
+        pass
+    temp_root.destroy()
+    
+    return result
   
 
 def main():
     """Main entry point"""
+    # Show startup dialog
+    choice = show_startup_dialog()
+    
+    # If user closed dialog without choosing, exit
+    if choice['action'] is None:
+        return
+    
+    # Small delay to ensure cleanup
+    import time
+    time.sleep(0.1)
+    
+    # Create main window
     root = tk.Tk()
+    
+    # Create the application
     app = CharacterSheetGUI(root)
+    
+    # Load character if requested
+    if choice['action'] == 'load' and choice['file']:
+        app.load_from_file(choice['file'])
+    
+    # Ensure main window has focus
+    root.focus_force()
+    
     root.mainloop()
 
 
