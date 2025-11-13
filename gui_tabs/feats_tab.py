@@ -58,7 +58,8 @@ class FeatsTab(BaseTab):
             'Item Creation',
             'Combat',
             'Skill',
-            'Special']
+            'Special',
+            'Epic']
         self.entries['feat_type'] = ttk.Combobox(
             add_feat_frame, width=15, values=feat_types)
         self.entries['feat_type'].grid(row=0, column=3, padx=2, pady=2)
@@ -138,6 +139,9 @@ class FeatsTab(BaseTab):
         self.feats_tree.pack(side='left', fill='both', expand=True)
         feats_scroll.config(command=self.feats_tree.yview)
 
+        # Bind double-click to show feat details
+        self.feats_tree.bind('<Double-Button-1>', self.show_feat_details)
+
         # Feat action buttons
         feat_btn_frame = ttk.Frame(feats_container)
         feat_btn_frame.pack(fill='x', pady=5)
@@ -150,8 +154,8 @@ class FeatsTab(BaseTab):
 
         epic_feats_btn = ttk.Button(
             feat_btn_frame,
-            text="Epic Feats",
-            command=self.show_epic_feats_dialog)
+            text="Add Epic Feat",
+            command=self.show_add_epic_feat_dialog)
         epic_feats_btn.pack(side='left', padx=2)
 
         # ===== SPECIAL ABILITIES SECTION =====
@@ -257,6 +261,9 @@ class FeatsTab(BaseTab):
         self.abilities_tree.pack(side='left', fill='both', expand=True)
         abilities_scroll.config(command=self.abilities_tree.yview)
 
+        # Bind double-click to show ability details
+        self.abilities_tree.bind('<Double-Button-1>', self.show_ability_details)
+
         # Ability action buttons
         ability_btn_frame = ttk.Frame(abilities_container)
         ability_btn_frame.pack(fill='x', pady=5)
@@ -306,6 +313,205 @@ class FeatsTab(BaseTab):
 
         self.mark_modified()
 
+    def show_feat_details(self, event=None):
+        """Show detailed information about a feat in an editable dialog"""
+        selection = self.feats_tree.selection()
+        if not selection:
+            return
+
+        item = self.feats_tree.item(selection[0])
+        feat_name = item['values'][0]
+
+        # Ignore separator row
+        if '═══' in feat_name:
+            return
+
+        # Find the feat and its index
+        feat = None
+        feat_index = None
+        for idx, f in enumerate(self.character.feats):
+            if f['name'] == feat_name:
+                feat = f
+                feat_index = idx
+                break
+
+        if not feat or feat_index is None:
+            return
+
+        # Create detail dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title(f"Edit Feat: {feat['name']}")
+        dialog.geometry("600x500")
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        # Main frame
+        main_frame = ttk.Frame(dialog, padding=10)
+        main_frame.pack(fill='both', expand=True)
+
+        # Title
+        ttk.Label(main_frame, text="Edit Feat", font=('TkDefaultFont', 14, 'bold')).pack(pady=10)
+
+        # Feat info frame
+        info_frame = ttk.LabelFrame(main_frame, text="Feat Information", padding=10)
+        info_frame.pack(fill='both', expand=True, pady=5)
+
+        # Name
+        ttk.Label(info_frame, text="Name:").grid(row=0, column=0, sticky='e', padx=5, pady=3)
+        name_var = tk.StringVar(value=feat['name'])
+        ttk.Entry(info_frame, textvariable=name_var, width=40).grid(row=0, column=1, columnspan=3, sticky='ew', padx=5, pady=3)
+
+        # Type
+        ttk.Label(info_frame, text="Type:").grid(row=1, column=0, sticky='e', padx=5, pady=3)
+        feat_types = ['General', 'Metamagic', 'Item Creation', 'Combat', 'Skill', 'Special']
+        type_var = tk.StringVar(value=feat.get('type', 'General'))
+        ttk.Combobox(info_frame, textvariable=type_var, values=feat_types, width=20).grid(row=1, column=1, sticky='w', padx=5, pady=3)
+
+        # Prerequisites
+        ttk.Label(info_frame, text="Prerequisites:").grid(row=2, column=0, sticky='e', padx=5, pady=3)
+        prereq_var = tk.StringVar(value=feat.get('prerequisites', ''))
+        ttk.Entry(info_frame, textvariable=prereq_var, width=40).grid(row=2, column=1, columnspan=3, sticky='ew', padx=5, pady=3)
+
+        # Benefit
+        ttk.Label(info_frame, text="Benefit:").grid(row=3, column=0, sticky='ne', padx=5, pady=3)
+        benefit_frame = ttk.Frame(info_frame)
+        benefit_frame.grid(row=3, column=1, columnspan=3, sticky='ew', padx=5, pady=3)
+        
+        benefit_text = tk.Text(benefit_frame, height=10, width=50, wrap='word')
+        benefit_scroll = ttk.Scrollbar(benefit_frame, command=benefit_text.yview)
+        benefit_text.config(yscrollcommand=benefit_scroll.set)
+        benefit_text.insert('1.0', feat.get('benefit', ''))
+        benefit_text.pack(side='left', fill='both', expand=True)
+        benefit_scroll.pack(side='right', fill='y')
+
+        info_frame.columnconfigure(1, weight=1)
+
+        # Buttons
+        btn_frame = ttk.Frame(main_frame)
+        btn_frame.pack(pady=10)
+
+        def save_changes():
+            name = name_var.get().strip()
+            if not name:
+                messagebox.showwarning("Missing Name", "Please enter a feat name.", parent=dialog)
+                return
+
+            # Update feat
+            self.character.feats[feat_index] = {
+                'name': name,
+                'type': type_var.get(),
+                'prerequisites': prereq_var.get().strip(),
+                'benefit': benefit_text.get('1.0', 'end-1c').strip(),
+                'description': ''  # Keep for compatibility
+            }
+
+            self.update_feats_display()
+            self.mark_modified()
+            dialog.destroy()
+
+        ttk.Button(btn_frame, text="Save", command=save_changes, width=15).pack(side='left', padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=15).pack(side='left', padx=5)
+
+    def show_ability_details(self, event=None):
+        """Show detailed information about a special ability in an editable dialog"""
+        selection = self.abilities_tree.selection()
+        if not selection:
+            return
+
+        item = self.abilities_tree.item(selection[0])
+        ability_name = item['values'][0]
+
+        # Find the ability and its index
+        ability = None
+        ability_index = None
+        for idx, a in enumerate(self.character.special_abilities):
+            if a['name'] == ability_name:
+                ability = a
+                ability_index = idx
+                break
+
+        if not ability or ability_index is None:
+            return
+
+        # Create detail dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title(f"Edit Special Ability: {ability['name']}")
+        dialog.geometry("600x500")
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        # Main frame
+        main_frame = ttk.Frame(dialog, padding=10)
+        main_frame.pack(fill='both', expand=True)
+
+        # Title
+        ttk.Label(main_frame, text="Edit Special Ability", font=('TkDefaultFont', 14, 'bold')).pack(pady=10)
+
+        # Ability info frame
+        info_frame = ttk.LabelFrame(main_frame, text="Ability Information", padding=10)
+        info_frame.pack(fill='both', expand=True, pady=5)
+
+        # Name
+        ttk.Label(info_frame, text="Name:").grid(row=0, column=0, sticky='e', padx=5, pady=3)
+        name_var = tk.StringVar(value=ability['name'])
+        ttk.Entry(info_frame, textvariable=name_var, width=40).grid(row=0, column=1, columnspan=3, sticky='ew', padx=5, pady=3)
+
+        # Source
+        ttk.Label(info_frame, text="Source:").grid(row=1, column=0, sticky='e', padx=5, pady=3)
+        ability_sources = ['Class', 'Racial', 'Feat', 'Item', 'Spell', 'Other']
+        source_var = tk.StringVar(value=ability.get('source', 'Class'))
+        ttk.Combobox(info_frame, textvariable=source_var, values=ability_sources, width=20).grid(row=1, column=1, sticky='w', padx=5, pady=3)
+
+        # Uses per day
+        ttk.Label(info_frame, text="Uses/Day:").grid(row=1, column=2, sticky='e', padx=5, pady=3)
+        uses_var = tk.IntVar(value=ability.get('uses_per_day', 0))
+        ttk.Spinbox(info_frame, from_=0, to=100, textvariable=uses_var, width=10).grid(row=1, column=3, sticky='w', padx=5, pady=3)
+
+        # Uses remaining
+        ttk.Label(info_frame, text="Uses Remaining:").grid(row=2, column=0, sticky='e', padx=5, pady=3)
+        remaining_var = tk.IntVar(value=ability.get('uses_remaining', 0))
+        ttk.Spinbox(info_frame, from_=0, to=100, textvariable=remaining_var, width=10).grid(row=2, column=1, sticky='w', padx=5, pady=3)
+
+        # Description
+        ttk.Label(info_frame, text="Description:").grid(row=3, column=0, sticky='ne', padx=5, pady=3)
+        desc_frame = ttk.Frame(info_frame)
+        desc_frame.grid(row=3, column=1, columnspan=3, sticky='ew', padx=5, pady=3)
+        
+        desc_text = tk.Text(desc_frame, height=12, width=50, wrap='word')
+        desc_scroll = ttk.Scrollbar(desc_frame, command=desc_text.yview)
+        desc_text.config(yscrollcommand=desc_scroll.set)
+        desc_text.insert('1.0', ability.get('description', ''))
+        desc_text.pack(side='left', fill='both', expand=True)
+        desc_scroll.pack(side='right', fill='y')
+
+        info_frame.columnconfigure(1, weight=1)
+
+        # Buttons
+        btn_frame = ttk.Frame(main_frame)
+        btn_frame.pack(pady=10)
+
+        def save_changes():
+            name = name_var.get().strip()
+            if not name:
+                messagebox.showwarning("Missing Name", "Please enter an ability name.", parent=dialog)
+                return
+
+            # Update ability
+            self.character.special_abilities[ability_index] = {
+                'name': name,
+                'source': source_var.get(),
+                'uses_per_day': uses_var.get(),
+                'uses_remaining': remaining_var.get(),
+                'description': desc_text.get('1.0', 'end-1c').strip()
+            }
+
+            self.update_abilities_display()
+            self.mark_modified()
+            dialog.destroy()
+
+        ttk.Button(btn_frame, text="Save", command=save_changes, width=15).pack(side='left', padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=15).pack(side='left', padx=5)
+
     def remove_feat(self):
         """Remove selected feat"""
         selection = self.feats_tree.selection()
@@ -315,197 +521,141 @@ class FeatsTab(BaseTab):
                 "Please select a feat to remove.")
             return
 
-        item = selection[0]
-        index = self.feats_tree.index(item)
+        item = self.feats_tree.item(selection[0])
+        feat_name = item['values'][0]
 
-        self.character.remove_feat(index)
-        self.update_feats_display()
-        self.mark_modified()
+        # Ignore separator row
+        if '═══' in feat_name:
+            return
 
-    def show_epic_feats_dialog(self):
-        """Show dialog for managing epic feats"""
-        # Removed level restriction - individual feat prerequisites will
-        # determine eligibility
+        # Find the feat index by name
+        feat_index = None
+        for idx, f in enumerate(self.character.feats):
+            if f['name'] == feat_name:
+                feat_index = idx
+                break
 
+        if feat_index is not None:
+            self.character.remove_feat(feat_index)
+            self.update_feats_display()
+            self.mark_modified()
+
+    def show_add_epic_feat_dialog(self):
+        """Show dialog to browse and add epic feats"""
         dialog = tk.Toplevel(self.root)
-        dialog.title("Epic Feats")
-        dialog.geometry("800x600")
+        dialog.title("Add Epic Feat")
+        dialog.geometry("700x600")
         dialog.transient(self.root)
         dialog.grab_set()
 
-        # Epic level info at top
-        info_frame = ttk.LabelFrame(
-            dialog, text="Character Information", padding=10)
-        info_frame.pack(fill='x', padx=10, pady=10)
+        # Main frame
+        main_frame = ttk.Frame(dialog, padding=10)
+        main_frame.pack(fill='both', expand=True)
+
+        # Info at top
+        info_frame = ttk.LabelFrame(main_frame, text="Epic Feats Information", padding=10)
+        info_frame.pack(fill='x', pady=5)
 
         total_level = self.character.get_total_level()
-
-        # Simplified info display - no feat count tracking
-        info_text = f"Total Level: {total_level}\n"
-        info_text += f"Epic Feats Selected: {len(self.character.epic_feats)}\n\n"
-        info_text += "Epic feats are available to any character who meets the individual feat prerequisites.\n"
+        info_text = f"Total Character Level: {total_level}\n\n"
+        info_text += "Epic feats are powerful abilities available to characters who meet their prerequisites.\n"
         info_text += "Prerequisites may include minimum level, ability scores, BAB, skills, or other feats."
 
-        info_label = ttk.Label(
-            info_frame,
-            text=info_text,
-            justify='left',
-            font=(
-                'Arial',
-                10))
-        info_label.pack(anchor='w')
-
-        # Current epic feats
-        current_frame = ttk.LabelFrame(
-            dialog, text="Current Epic Feats", padding=10)
-        current_frame.pack(fill='both', expand=True, padx=10, pady=5)
-
-        current_list = tk.Listbox(current_frame, height=6)
-        current_list.pack(fill='both', expand=True)
-
-    def refresh_current_feats():
-        current_list.delete(0, tk.END)
-        for feat in self.character.epic_feats:
-            current_list.insert(tk.END, feat)
-
-        refresh_current_feats()
-
-        # Remove epic feat button
-        remove_btn = ttk.Button(
-            current_frame,
-            text="Remove Selected Epic Feat",
-            command=lambda: remove_epic_feat())
-        remove_btn.pack(pady=5)
-
-    def remove_epic_feat():
-        selection = current_list.curselection()
-        if selection:
-            feat_name = current_list.get(selection[0])
-        self.character.remove_epic_feat(feat_name)
-        refresh_current_feats()
-        self.mark_modified()
-
-        # Available epic feats
-        available_frame = ttk.LabelFrame(
-            dialog, text="Available Epic Feats", padding=10)
-        available_frame.pack(fill='both', expand=True, padx=10, pady=5)
+        ttk.Label(info_frame, text=info_text, justify='left').pack(anchor='w')
 
         # Selection frame
-        select_frame = ttk.Frame(available_frame)
+        select_frame = ttk.LabelFrame(main_frame, text="Select Epic Feat", padding=10)
         select_frame.pack(fill='x', pady=5)
 
-        ttk.Label(
-            select_frame,
-            text="Select Epic Feat:").pack(
-            side='left',
-            padx=5)
+        ttk.Label(select_frame, text="Choose an Epic Feat:").pack(anchor='w', pady=3)
 
         epic_feat_var = tk.StringVar()
-        all_epic_feats = self.character.get_all_epic_feats_list()
+        all_epic_feats = sorted(EPIC_FEATS.keys())
         epic_feat_combo = ttk.Combobox(
             select_frame,
             textvariable=epic_feat_var,
             values=all_epic_feats,
             state='readonly',
-            width=40)
-        epic_feat_combo.pack(side='left', padx=5, fill='x', expand=True)
+            width=50)
+        epic_feat_combo.pack(fill='x', pady=3)
         if all_epic_feats:
             epic_feat_combo.current(0)
 
         # Description frame
-        desc_frame = ttk.Frame(available_frame)
-        desc_frame.pack(fill='both', expand=True)
+        desc_frame = ttk.LabelFrame(main_frame, text="Feat Details", padding=10)
+        desc_frame.pack(fill='both', expand=True, pady=5)
 
-        desc_text = tk.Text(
-            desc_frame,
-            height=10,
-            width=70,
-            wrap='word',
-            state='disabled')
+        desc_text = tk.Text(desc_frame, height=15, width=70, wrap='word', state='disabled')
         desc_scroll = ttk.Scrollbar(desc_frame, command=desc_text.yview)
         desc_text.config(yscrollcommand=desc_scroll.set)
         desc_text.pack(side='left', fill='both', expand=True)
         desc_scroll.pack(side='right', fill='y')
 
-    def update_description(*args):
-        selected = epic_feat_var.get()
-        if not selected:
-            return
+        def update_description(*args):
+            selected = epic_feat_var.get()
+            if not selected:
+                return
 
-        feat_info = EPIC_FEATS.get(selected, {})
+            feat_info = EPIC_FEATS.get(selected, {})
 
-        desc_text.config(state='normal')
-        desc_text.delete('1.0', tk.END)
+            desc_text.config(state='normal')
+            desc_text.delete('1.0', tk.END)
 
-        desc_text.insert(tk.END, f"{selected}\n\n", 'title')
-        desc_text.insert(
-            tk.END,
-            f"Type: {
-                feat_info.get(
-                    'type',
-                    'Epic')}\n\n",
-            'bold')
-        desc_text.insert(
-            tk.END,
-            f"Prerequisites: {
-                feat_info.get(
-                    'prerequisites',
-                    'None')}\n\n")
-        desc_text.insert(
-            tk.END, f"Benefit: {
-                feat_info.get(
-                    'benefit', '')}\n\n")
-        if feat_info.get('special'):
-            desc_text.insert(
-                tk.END,
-                f"Special: {
-                    feat_info.get(
-                        'special',
-                        '')}\n",
-                'special')
+            desc_text.insert(tk.END, f"{selected}\n\n", 'title')
+            desc_text.insert(tk.END, f"Type: Epic\n\n", 'bold')
+            desc_text.insert(tk.END, f"Prerequisites: {feat_info.get('prerequisites', 'None')}\n\n")
+            desc_text.insert(tk.END, f"Benefit: {feat_info.get('benefit', '')}\n\n")
+            if feat_info.get('special'):
+                desc_text.insert(tk.END, f"Special: {feat_info.get('special', '')}\n", 'special')
 
-        desc_text.tag_config('title', font=('Arial', 12, 'bold'))
-        desc_text.tag_config('bold', font=('Arial', 10, 'bold'))
-        desc_text.tag_config('special', font=('Arial', 9, 'italic'))
+            desc_text.tag_config('title', font=('Arial', 12, 'bold'))
+            desc_text.tag_config('bold', font=('Arial', 10, 'bold'))
+            desc_text.tag_config('special', font=('Arial', 9, 'italic'))
 
-        desc_text.config(state='disabled')
+            desc_text.config(state='disabled')
 
         epic_feat_combo.bind('<<ComboboxSelected>>', update_description)
         update_description()
 
-        # Add button
-    def add_epic_feat():
-        selected = epic_feat_var.get()
-        if not selected:
-            messagebox.showwarning("No Selection", "Please select an epic feat.")
-            return
+        # Buttons
+        btn_frame = ttk.Frame(main_frame)
+        btn_frame.pack(pady=10)
 
-        # Check if already have this feat (for feats that can't be taken
-        # multiple times)
-        if selected in self.character.epic_feats:
-            feat_info = EPIC_FEATS.get(selected, {})
-            if feat_info.get(
-                    'special') and 'multiple times' in feat_info['special'].lower():
-                # Can take multiple times
-                pass
-            else:
-                messagebox.showwarning("Already Selected",
-                                       f"You already have {selected}.\n"
-                                       "This feat cannot be taken multiple times.")
+        def add_epic_feat():
+            selected = epic_feat_var.get()
+            if not selected:
+                messagebox.showwarning("No Selection", "Please select an epic feat.", parent=dialog)
                 return
 
-        # No feat count restriction - only individual feat prerequisites matter
-        self.character.add_epic_feat(selected)
-        refresh_current_feats()
-        self.mark_modified()
-        messagebox.showinfo("Epic Feat Added",
-                            f"{selected} has been added to your epic feats!")
+            # Check if already have this feat
+            if any(f['name'] == selected for f in self.character.feats):
+                feat_info = EPIC_FEATS.get(selected, {})
+                # Check if can be taken multiple times
+                if feat_info.get('special') and 'multiple times' in feat_info['special'].lower():
+                    pass  # Allow adding again
+                else:
+                    messagebox.showwarning(
+                        "Already Selected",
+                        f"You already have {selected}.\nThis feat cannot be taken multiple times.",
+                        parent=dialog)
+                    return
 
-        add_btn = ttk.Button(
-            available_frame,
-            text="Add Epic Feat",
-            command=add_epic_feat)
-        add_btn.pack(pady=5)
+            # Add as regular feat with type 'Epic'
+            feat_info = EPIC_FEATS.get(selected, {})
+            self.character.add_feat(
+                name=selected,
+                feat_type='Epic',
+                prerequisites=feat_info.get('prerequisites', ''),
+                benefit=feat_info.get('benefit', '')
+            )
+
+            self.update_feats_display()
+            self.mark_modified()
+            messagebox.showinfo("Epic Feat Added", f"{selected} has been added to your feats!", parent=dialog)
+            dialog.destroy()
+
+        ttk.Button(btn_frame, text="Add Epic Feat", command=add_epic_feat, width=20).pack(side='left', padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=20).pack(side='left', padx=5)
 
         # Close button
         close_btn = ttk.Button(dialog, text="Close", command=dialog.destroy)
@@ -587,23 +737,68 @@ class FeatsTab(BaseTab):
             "All special ability uses have been restored!")
 
     def update_feats_display(self):
-        """Update the feats treeview"""
+        """Update the feats treeview - shows regular feats and epic feats with separator"""
         # Clear treeview
         for item in self.feats_tree.get_children():
             self.feats_tree.delete(item)
 
-        # Populate with feats
-        for feat in self.character.feats:
+        # Migrate old epic_feats format if needed
+        if hasattr(self.character, 'epic_feats') and self.character.epic_feats:
+            # Convert old epic_feats list to new format and add to feats
+            for epic_feat_name in self.character.epic_feats:
+                # Check if already in feats list
+                if not any(f['name'] == epic_feat_name for f in self.character.feats):
+                    # Get epic feat info from EPIC_FEATS
+                    feat_info = EPIC_FEATS.get(epic_feat_name, {})
+                    self.character.feats.append({
+                        'name': epic_feat_name,
+                        'type': 'Epic',
+                        'prerequisites': feat_info.get('prerequisites', ''),
+                        'benefit': feat_info.get('benefit', ''),
+                        'description': ''
+                    })
+            # Clear old epic_feats list
+            self.character.epic_feats = []
+
+        # Separate regular and epic feats
+        regular_feats = [f for f in self.character.feats if f.get('type', 'General') != 'Epic']
+        epic_feats = [f for f in self.character.feats if f.get('type', 'General') == 'Epic']
+
+        # Populate with regular feats
+        for feat in regular_feats:
+            benefit_preview = feat.get('benefit', '')[:50]
+            if len(feat.get('benefit', '')) > 50:
+                benefit_preview += '...'
+            
             self.feats_tree.insert(
                 '', 'end', values=(
-                    feat['name'], feat.get(
-                        'type', 'General'), feat.get(
-                        'prerequisites', ''), feat.get(
-                        'benefit', '')[
-                            :50] + (
-                                '...' if len(
-                                    feat.get(
-                                        'benefit', '')) > 50 else '')))
+                    feat['name'], 
+                    feat.get('type', 'General'), 
+                    feat.get('prerequisites', ''), 
+                    benefit_preview))
+
+        # Add separator if there are epic feats
+        if epic_feats:
+            # Insert separator row
+            separator_id = self.feats_tree.insert(
+                '', 'end', values=(
+                    '═══════════════ EPIC FEATS ═══════════════',
+                    '', '', ''), tags=('separator',))
+            # Configure separator appearance
+            self.feats_tree.tag_configure('separator', background='#e0e0e0', font=('TkDefaultFont', 9, 'bold'))
+
+            # Populate with epic feats
+            for feat in epic_feats:
+                benefit_preview = feat.get('benefit', '')[:50]
+                if len(feat.get('benefit', '')) > 50:
+                    benefit_preview += '...'
+                
+                self.feats_tree.insert(
+                    '', 'end', values=(
+                        feat['name'], 
+                        feat.get('type', 'Epic'), 
+                        feat.get('prerequisites', ''), 
+                        benefit_preview))
 
     def update_abilities_display(self):
         """Update the special abilities treeview"""

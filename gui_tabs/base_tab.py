@@ -53,7 +53,7 @@ class BaseTab:
 
     def bind_mousewheel(self, canvas):
         """
-        Bind mouse wheel scrolling to canvas using enter/leave events
+        Bind mouse wheel scrolling to canvas and all its descendants
 
         Args:
             canvas: The canvas widget to bind scrolling to
@@ -67,23 +67,22 @@ class BaseTab:
                 # Canvas has been destroyed, ignore the event
                 pass
 
-        def bind_wheel(event):
-            try:
-                if canvas.winfo_exists():
-                    canvas.bind_all("<MouseWheel>", on_mousewheel)
-            except tk.TclError:
-                pass
+        def bind_tree(widget):
+            """Recursively bind mousewheel to widget and all descendants"""
+            widget.bind("<MouseWheel>", on_mousewheel, add='+')
+            for child in widget.winfo_children():
+                bind_tree(child)
 
-        def unbind_wheel(event):
-            try:
-                if canvas.winfo_exists():
-                    canvas.unbind_all("<MouseWheel>")
-            except tk.TclError:
-                pass
-
-        # Bind on mouse enter, unbind on mouse leave
-        canvas.bind('<Enter>', bind_wheel)
-        canvas.bind('<Leave>', unbind_wheel)
+        # Bind to canvas
+        canvas.bind("<MouseWheel>", on_mousewheel, add='+')
+        
+        # Wait for canvas to be mapped and bind to all children
+        def bind_all_children():
+            for child in canvas.winfo_children():
+                bind_tree(child)
+        
+        # Schedule binding after widgets are created
+        canvas.after(100, bind_all_children)
 
     def get_entry_int(self, key, default=0):
         """Get integer value from entry widget"""

@@ -616,10 +616,10 @@ class CharacterSheetGUI:
             self.update_abilities_display()
         
         # Weapons and Magic Items (delegate to tabs if available)
-        if hasattr(self, 'weapons_tree'):
-            self.refresh_weapons()
-        if hasattr(self, 'magic_items_tab') and hasattr(self.magic_items_tab, 'update'):
-            self.magic_items_tab.update()
+        if hasattr(self, 'main_tab') and hasattr(self.main_tab, 'refresh_weapons'):
+            self.main_tab.refresh_weapons()
+        if hasattr(self, 'magic_items_tab') and hasattr(self.magic_items_tab, 'refresh_magic_items'):
+            self.magic_items_tab.refresh_magic_items()
         
         # Update AC display to show magic item bonuses
         self.update_ac_display()
@@ -826,8 +826,8 @@ class CharacterSheetGUI:
             self.update_spell_dcs()
         
         # Update weapons display (attack bonuses depend on BAB and ability scores)
-        if hasattr(self, 'weapons_tree'):
-            self.refresh_weapons()
+        if hasattr(self, 'main_tab') and hasattr(self.main_tab, 'refresh_weapons'):
+            self.main_tab.refresh_weapons()
     
     def update_ac_display(self):
         """Update all AC-related displays"""

@@ -1744,21 +1744,21 @@ class MainTab(BaseTab):
             if len(notes) > 30:
                 notes = notes[:27] + '...'
 
-        weight = weapon.get('weight', 0)
-        weight_text = f"{weight}" if weight else ""
+            weight = weapon.get('weight', 0)
+            weight_text = f"{weight}" if weight else ""
 
-        self.weapons_tree.insert('', 'end', values=(
-            weapon['name'],
-            weapon_type.capitalize(),
-            attack_text,
-            damage_text,
-            weapon.get('critical', '20/x2'),
-            weapon.get('range', ''),
-            weapon.get('damage_type', ''),
-            weapon.get('size', ''),
-            weight_text,
-            notes
-        ))
+            self.weapons_tree.insert('', 'end', values=(
+                weapon['name'],
+                weapon_type.capitalize(),
+                attack_text,
+                damage_text,
+                weapon.get('critical', '20/x2'),
+                weapon.get('range', ''),
+                weapon.get('damage_type', ''),
+                weapon.get('size', ''),
+                weight_text,
+                notes
+            ))
     
     def update_ac_components(self, magic_armor, magic_shield, magic_natural, magic_deflection):
         """Update AC component displays to show magic item bonuses"""
