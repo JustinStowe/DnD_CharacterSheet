@@ -1048,7 +1048,7 @@ class Character:
     
     def add_spell(self, name, level, school='', casting_time='', range_='', 
                   components='', duration='', saving_throw='', spell_resistance='', 
-                  description='', prepared=False):
+                  description='', reference='', prepared=False):
         """Add a spell to the spell list"""
         self.spells.append({
             'name': name,
@@ -1061,6 +1061,7 @@ class Character:
             'saving_throw': saving_throw,
             'spell_resistance': spell_resistance,
             'description': description,
+            'reference': reference,
             'prepared': prepared
         })
     

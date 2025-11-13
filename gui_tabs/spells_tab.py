@@ -365,6 +365,18 @@ class SpellsTab(BaseTab):
         self.entries['spell_description'] = ttk.Entry(add_frame, width=60)
         self.entries['spell_description'].grid(
             row=3, column=1, columnspan=5, sticky='ew', padx=2, pady=2)
+        
+        ttk.Label(
+            add_frame,
+            text="Reference (Book/Page):").grid(
+            row=4,
+            column=0,
+            sticky='e',
+            padx=2,
+            pady=2)
+        self.entries['spell_reference'] = ttk.Entry(add_frame, width=30)
+        self.entries['spell_reference'].grid(
+            row=4, column=1, columnspan=2, sticky='w', padx=2, pady=2)
 
         # Prepared checkbox
         self.spell_prepared_var = tk.BooleanVar(value=False)
@@ -378,7 +390,7 @@ class SpellsTab(BaseTab):
             add_frame,
             text="Add Spell",
             command=self.add_spell_to_list)
-        add_spell_btn.grid(row=4, column=0, columnspan=6, pady=5)
+        add_spell_btn.grid(row=5, column=0, columnspan=6, pady=5)
 
         # Create notebook for spell level tabs
         self.spell_level_notebook = ttk.Notebook(spells_list_frame)
@@ -607,6 +619,7 @@ class SpellsTab(BaseTab):
         components = self.entries['spell_components'].get().strip()
         casting_time = self.entries['spell_casting_time'].get().strip()
         description = self.entries['spell_description'].get().strip()
+        reference = self.entries['spell_reference'].get().strip()
         prepared = self.spell_prepared_var.get()
 
         self.character.add_spell(
@@ -618,6 +631,7 @@ class SpellsTab(BaseTab):
             components=components,
             casting_time=casting_time,
             description=description,
+            reference=reference,
             prepared=prepared
         )
 
@@ -631,6 +645,7 @@ class SpellsTab(BaseTab):
         self.entries['spell_components'].delete(0, tk.END)
         self.entries['spell_casting_time'].delete(0, tk.END)
         self.entries['spell_description'].delete(0, tk.END)
+        self.entries['spell_reference'].delete(0, tk.END)
         self.spell_prepared_var.set(False)
 
         self.mark_modified()
@@ -842,12 +857,19 @@ class SpellsTab(BaseTab):
             main_frame, text="Prepared", variable=prepared_var)
         prepared_check.grid(row=7, column=1, sticky='w', padx=5, pady=5)
         
+        # Reference
+        ttk.Label(main_frame, text="Reference:", font=('Arial', 9, 'bold')).grid(
+            row=8, column=0, sticky='e', padx=5, pady=5)
+        reference_entry = ttk.Entry(main_frame, width=30)
+        reference_entry.insert(0, spell.get('reference', ''))
+        reference_entry.grid(row=8, column=1, columnspan=2, sticky='ew', padx=5, pady=5)
+        
         # Description
         ttk.Label(main_frame, text="Description:", font=('Arial', 9, 'bold')).grid(
-            row=8, column=0, sticky='ne', padx=5, pady=5)
+            row=9, column=0, sticky='ne', padx=5, pady=5)
         
         desc_frame = ttk.Frame(main_frame)
-        desc_frame.grid(row=8, column=1, columnspan=2, sticky='nsew', padx=5, pady=5)
+        desc_frame.grid(row=9, column=1, columnspan=2, sticky='nsew', padx=5, pady=5)
         
         desc_scrollbar = ttk.Scrollbar(desc_frame)
         desc_scrollbar.pack(side='right', fill='y')
@@ -861,7 +883,7 @@ class SpellsTab(BaseTab):
         
         # Configure grid weights
         main_frame.columnconfigure(1, weight=1)
-        main_frame.rowconfigure(8, weight=1)
+        main_frame.rowconfigure(9, weight=1)
         
         # Button frame
         button_frame = ttk.Frame(dialog)
@@ -878,6 +900,7 @@ class SpellsTab(BaseTab):
                 'duration': duration_entry.get().strip(),
                 'components': components_entry.get().strip(),
                 'prepared': prepared_var.get(),
+                'reference': reference_entry.get().strip(),
                 'description': desc_text.get('1.0', 'end-1c').strip()
             }
             self.update_spell_list_display()
@@ -961,3 +984,4 @@ class SpellsTab(BaseTab):
                     prepared_text,
                     '[Cast]'
                 ))
+
