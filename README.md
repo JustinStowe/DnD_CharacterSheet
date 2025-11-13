@@ -159,7 +159,8 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
 #### Inventory Tab
 
 - Track all your equipment
-  - Add items with weight and quantity
+  - Add items with weight, quantity, and notes
+  - **Double-click to edit items** - modify name, weight, quantity, or notes
   - Carrying capacity auto-calculates based on STR
   - Color-coded load indicator (Light/Medium/Heavy/Overloaded)
   - Shows encumbrance penalties (Max DEX, Check Penalty, Speed Reduction)
@@ -169,6 +170,11 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
 - **Spellcasting Ability**: Automatically set based on class
   - Can be manually changed if needed
   - Spell save DCs auto-calculate for each spell level based on correct ability
+- **Spell Level Organization**: Spells organized in sub-tabs by spell level
+  - Separate tabs for each spell level: 0 (Cantrips), 1st through 9th, and Epic
+  - Easily navigate between spell levels
+  - Each tab shows only spells of that level
+  - Cleaner organization for characters with many spells
 - **Automatic Spell Slots Calculation**:
   - Click "Calculate Spell Slots (from Class/Level)" button
   - Automatically sets spell slots per day based on:
@@ -183,7 +189,11 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
 - Track spell slots (max, used, remaining) for levels 0-9
 - Add spells with full details (school, range, duration, components, etc.)
 - Mark spells as prepared (for prepared casters like Clerics and Wizards)
-- Filter spell list by level
+- **Cast Spell Button**: Each spell has a [Cast] button for quick casting
+  - Click to automatically use one spell slot of that level
+  - Shows confirmation with spell name and remaining slots
+  - Warns if no spell slots remaining for that level
+  - Integrates with spell slot tracking system
 - Long Rest button to reset used spell slots
 - Double-click a spell to toggle prepared status
 
@@ -228,7 +238,7 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
     - Example: Vest of the Archmagi with Armor +8, Resistance +5, Spell Resistance +2
   - **Special Properties**: Text field for abilities like "Recall up to lvl 9 spell (3/day)"
   - **Description**: Full item description and lore
-- **Equipment System**: 
+- **Equipment System**:
   - **Equipped Status**: Click the "Equipped" column (shows ✓) to toggle equipment
   - **Automatic Stat Application**: When equipped, bonuses immediately apply to character
     - Armor bonus: Added to AC
@@ -258,8 +268,9 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
 **Example Magic Item Creation**:
 
 Creating "Vest of the Archmagi":
+
 1. Click "Create New Item"
-2. Name: "Vest of the Archmagi", Type: "Wondrous Item", Slot: "Body"
+2. Name: "Vest of the Archmagi", Type: "armor", Slot: "Body"
 3. Add bonuses:
    - Armor: +8
    - Resistance (All Saves): +5
@@ -267,7 +278,7 @@ Creating "Vest of the Archmagi":
 4. Properties: "Recall up to lvl 9 spell (3/day)\nExpend spell slot: Heal (5 x spell lvl)"
 5. Click "Create Item"
 6. Click the Equipped column to equip it
-7. Character immediately gains: +8 AC, +5 to all saves, +2 Spell Resistance
+7. Character immediately gains: +8 AC, +5 to all saves, +2 spell penetration
 
 #### Weapons (Main Tab)
 
