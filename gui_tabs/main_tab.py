@@ -814,6 +814,9 @@ class MainTab(BaseTab):
 
         self.weapons_tree.pack(side='left', fill='both', expand=True)
         weapons_scroll.config(command=self.weapons_tree.yview)
+        
+        # Bind double-click to show weapon details
+        self.weapons_tree.bind('<Double-Button-1>', self.show_weapon_details)
 
         # Remove weapon button
         remove_weapon_btn = ttk.Button(
@@ -1541,6 +1544,131 @@ class MainTab(BaseTab):
         self.entries['weapon_notes'].delete(0, 'end')
         self.entries['weapon_size'].current(4)  # Reset to Medium
         self.entries['weapon_damage_type'].current(0)  # Reset to Slashing
+
+    def show_weapon_details(self, event=None):
+        """Show detailed information about a weapon in an editable dialog"""
+        selection = self.weapons_tree.selection()
+        if not selection:
+            return
+
+        item = self.weapons_tree.item(selection[0])
+        weapon_name = item['values'][0]
+
+        # Find the weapon and its index
+        weapon = None
+        weapon_index = None
+        for idx, w in enumerate(self.character.weapons):
+            if w['name'] == weapon_name:
+                weapon = w
+                weapon_index = idx
+                break
+
+        if not weapon or weapon_index is None:
+            return
+
+        # Create detail dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title(f"Edit Weapon: {weapon['name']}")
+        dialog.geometry("600x500")
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        # Main frame
+        main_frame = ttk.Frame(dialog, padding=10)
+        main_frame.pack(fill='both', expand=True)
+
+        # Title
+        ttk.Label(main_frame, text="Edit Weapon", font=('TkDefaultFont', 14, 'bold')).pack(pady=10)
+
+        # Basic info frame
+        basic_frame = ttk.LabelFrame(main_frame, text="Weapon Information", padding=10)
+        basic_frame.pack(fill='x', pady=5)
+
+        # Name
+        ttk.Label(basic_frame, text="Name:").grid(row=0, column=0, sticky='e', padx=5, pady=3)
+        name_var = tk.StringVar(value=weapon['name'])
+        ttk.Entry(basic_frame, textvariable=name_var, width=40).grid(row=0, column=1, columnspan=3, sticky='ew', padx=5, pady=3)
+
+        # Type and Attack
+        ttk.Label(basic_frame, text="Type:").grid(row=1, column=0, sticky='e', padx=5, pady=3)
+        weapon_types = ['Melee', 'Ranged', 'Both']
+        type_var = tk.StringVar(value=weapon.get('type', 'Melee'))
+        ttk.Combobox(basic_frame, textvariable=type_var, values=weapon_types, width=12).grid(row=1, column=1, sticky='w', padx=5, pady=3)
+
+        ttk.Label(basic_frame, text="Attack Bonus:").grid(row=1, column=2, sticky='e', padx=5, pady=3)
+        attack_var = tk.IntVar(value=weapon.get('attack_bonus', 0))
+        ttk.Spinbox(basic_frame, from_=-5, to=20, textvariable=attack_var, width=8).grid(row=1, column=3, sticky='w', padx=5, pady=3)
+
+        # Damage and Critical
+        ttk.Label(basic_frame, text="Damage:").grid(row=2, column=0, sticky='e', padx=5, pady=3)
+        damage_var = tk.StringVar(value=weapon.get('damage', '1d8'))
+        ttk.Entry(basic_frame, textvariable=damage_var, width=15).grid(row=2, column=1, sticky='w', padx=5, pady=3)
+
+        ttk.Label(basic_frame, text="Critical:").grid(row=2, column=2, sticky='e', padx=5, pady=3)
+        critical_var = tk.StringVar(value=weapon.get('critical', '20/x2'))
+        ttk.Entry(basic_frame, textvariable=critical_var, width=15).grid(row=2, column=3, sticky='w', padx=5, pady=3)
+
+        # Range and Damage Type
+        ttk.Label(basic_frame, text="Range:").grid(row=3, column=0, sticky='e', padx=5, pady=3)
+        range_var = tk.StringVar(value=weapon.get('range', '-'))
+        ttk.Entry(basic_frame, textvariable=range_var, width=15).grid(row=3, column=1, sticky='w', padx=5, pady=3)
+
+        ttk.Label(basic_frame, text="Damage Type:").grid(row=3, column=2, sticky='e', padx=5, pady=3)
+        damage_types = ['Slashing', 'Piercing', 'Bludgeoning', 'S/P', 'P/B', 'S/B', 'S/P/B']
+        damage_type_var = tk.StringVar(value=weapon.get('damage_type', 'Slashing'))
+        ttk.Combobox(basic_frame, textvariable=damage_type_var, values=damage_types, width=12).grid(row=3, column=3, sticky='w', padx=5, pady=3)
+
+        # Size and Weight
+        ttk.Label(basic_frame, text="Size:").grid(row=4, column=0, sticky='e', padx=5, pady=3)
+        sizes = ['Tiny', 'Small', 'Medium', 'Large', 'Huge', 'Gargantuan', 'Colossal']
+        size_var = tk.StringVar(value=weapon.get('size', 'Medium'))
+        ttk.Combobox(basic_frame, textvariable=size_var, values=sizes, width=12).grid(row=4, column=1, sticky='w', padx=5, pady=3)
+
+        ttk.Label(basic_frame, text="Weight:").grid(row=4, column=2, sticky='e', padx=5, pady=3)
+        weight_var = tk.StringVar(value=weapon.get('weight', ''))
+        ttk.Entry(basic_frame, textvariable=weight_var, width=15).grid(row=4, column=3, sticky='w', padx=5, pady=3)
+
+        # Notes frame
+        notes_frame = ttk.LabelFrame(main_frame, text="Notes", padding=10)
+        notes_frame.pack(fill='both', expand=True, pady=5)
+
+        notes_text = tk.Text(notes_frame, height=8, width=60, wrap='word')
+        notes_scroll = ttk.Scrollbar(notes_frame, command=notes_text.yview)
+        notes_text.config(yscrollcommand=notes_scroll.set)
+        notes_text.insert('1.0', weapon.get('notes', ''))
+        notes_text.pack(side='left', fill='both', expand=True)
+        notes_scroll.pack(side='right', fill='y')
+
+        # Buttons
+        btn_frame = ttk.Frame(main_frame)
+        btn_frame.pack(pady=10)
+
+        def save_changes():
+            name = name_var.get().strip()
+            if not name:
+                messagebox.showwarning("Missing Name", "Please enter a weapon name.", parent=dialog)
+                return
+
+            # Update weapon
+            self.character.weapons[weapon_index] = {
+                'name': name,
+                'type': type_var.get(),
+                'attack_bonus': attack_var.get(),
+                'damage': damage_var.get(),
+                'critical': critical_var.get(),
+                'range': range_var.get(),
+                'damage_type': damage_type_var.get(),
+                'size': size_var.get(),
+                'weight': weight_var.get(),
+                'notes': notes_text.get('1.0', 'end-1c').strip()
+            }
+
+            self.refresh_weapons()
+            self.mark_modified()
+            dialog.destroy()
+
+        ttk.Button(btn_frame, text="Save", command=save_changes, width=15).pack(side='left', padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=15).pack(side='left', padx=5)
 
     def remove_weapon(self):
         """Remove the selected weapon"""
