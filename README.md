@@ -170,11 +170,17 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
 - **Spellcasting Ability**: Automatically set based on class
   - Can be manually changed if needed
   - Spell save DCs auto-calculate for each spell level based on correct ability
+- **Range Definitions**: Shows calculated spell ranges based on caster level
+  - Close: 25 ft + 5 ft/2 levels
+  - Medium: 100 ft + 10 ft/level
+  - Long: 400 ft + 40 ft/level
+  - Updates automatically as character level changes
 - **Spell Level Organization**: Spells organized in sub-tabs by spell level
-  - Separate tabs for each spell level: 0 (Cantrips), 1st through 9th, and Epic
+  - Separate tabs for each spell level: 0 (Cantrips), 1st through 9th
   - Easily navigate between spell levels
   - Each tab shows only spells of that level
   - Cleaner organization for characters with many spells
+  - **Scrollable interface** for managing large spell lists
 - **Automatic Spell Slots Calculation**:
   - Click "Calculate Spell Slots (from Class/Level)" button
   - Automatically sets spell slots per day based on:
@@ -187,15 +193,25 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
     - 2nd level: 2 base + 1 bonus = 3 total
     - 3rd level: 1 base + 1 bonus = 2 total
 - Track spell slots (max, used, remaining) for levels 0-9
-- Add spells with full details (school, range, duration, components, etc.)
-- Mark spells as prepared (for prepared casters like Clerics and Wizards)
+- **Add Spells**: Enter complete spell information
+  - Name, level, school, casting time, range, duration, components
+  - **Description field** for full spell text and notes
+  - Mark spells as prepared (for prepared casters like Clerics and Wizards)
+- **Spell List Display**: Shows all important spell information
+  - Columns: Name, School, Casting Time, Range, Duration, Components, Prepared, Cast
+  - Sorted alphabetically within each spell level
 - **Cast Spell Button**: Each spell has a [Cast] button for quick casting
   - Click to automatically use one spell slot of that level
   - Shows confirmation with spell name and remaining slots
   - Warns if no spell slots remaining for that level
   - Integrates with spell slot tracking system
+- **Detailed Spell View**: Double-click any spell to view/edit full details
+  - Opens dialog with all spell information
+  - Edit any field including the full description
+  - Scrollable description area for long spell text
+  - Change spell level, toggle prepared status
+  - Save changes or cancel
 - Long Rest button to reset used spell slots
-- Double-click a spell to toggle prepared status
 
 #### Feats & Abilities Tab
 

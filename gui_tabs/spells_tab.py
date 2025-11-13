@@ -15,9 +15,27 @@ class SpellsTab(BaseTab):
 
     def build(self):
         """Build the spells tab"""
-        # Create main container
-        main_container = ttk.Frame(self.parent)
-        main_container.pack(fill='both', expand=True, padx=5, pady=5)
+        # Create scrollable main container
+        canvas = tk.Canvas(self.parent)
+        scrollbar = ttk.Scrollbar(
+            self.parent,
+            orient="vertical",
+            command=canvas.yview)
+        main_container = ttk.Frame(canvas)
+
+        main_container.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=main_container, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Bind mouse wheel scrolling
+        self.bind_mousewheel(canvas)
 
         # Top frame for spellcasting info
         casting_frame = ttk.LabelFrame(
@@ -79,6 +97,31 @@ class SpellsTab(BaseTab):
                 10,
                 'bold'))
         self.labels['spell_modifier'].grid(row=0, column=5, padx=5, pady=5)
+
+        # Range definitions
+        range_frame = ttk.Frame(casting_frame)
+        range_frame.pack(fill='x', pady=(10, 0))
+        
+        ttk.Label(
+            range_frame,
+            text="Range Definitions:",
+            font=('Arial', 9, 'bold')).grid(
+            row=0,
+            column=0,
+            sticky='w',
+            padx=5,
+            pady=2)
+        
+        self.labels['range_definitions'] = ttk.Label(
+            range_frame,
+            text="Close: 25 ft + 5 ft/2 levels | Medium: 100 ft + 10 ft/level | Long: 400 ft + 40 ft/level",
+            font=('Arial', 8))
+        self.labels['range_definitions'].grid(
+            row=1,
+            column=0,
+            sticky='w',
+            padx=20,
+            pady=2)
 
         # Spell slots frame
         slots_frame = ttk.LabelFrame(
@@ -310,6 +353,18 @@ class SpellsTab(BaseTab):
         self.entries['spell_casting_time'] = ttk.Entry(add_frame, width=15)
         self.entries['spell_casting_time'].grid(
             row=2, column=3, padx=2, pady=2)
+        
+        ttk.Label(
+            add_frame,
+            text="Description:").grid(
+            row=3,
+            column=0,
+            sticky='e',
+            padx=2,
+            pady=2)
+        self.entries['spell_description'] = ttk.Entry(add_frame, width=60)
+        self.entries['spell_description'].grid(
+            row=3, column=1, columnspan=5, sticky='ew', padx=2, pady=2)
 
         # Prepared checkbox
         self.spell_prepared_var = tk.BooleanVar(value=False)
@@ -323,7 +378,7 @@ class SpellsTab(BaseTab):
             add_frame,
             text="Add Spell",
             command=self.add_spell_to_list)
-        add_spell_btn.grid(row=3, column=0, columnspan=6, pady=5)
+        add_spell_btn.grid(row=4, column=0, columnspan=6, pady=5)
 
         # Create notebook for spell level tabs
         self.spell_level_notebook = ttk.Notebook(spells_list_frame)
@@ -350,6 +405,7 @@ class SpellsTab(BaseTab):
         columns = (
             'name',
             'school',
+            'casting_time',
             'range',
             'duration',
             'components',
@@ -377,18 +433,20 @@ class SpellsTab(BaseTab):
             
             tree.heading('name', text='Spell Name')
             tree.heading('school', text='School')
+            tree.heading('casting_time', text='Casting Time')
             tree.heading('range', text='Range')
             tree.heading('duration', text='Duration')
             tree.heading('components', text='Components')
             tree.heading('prepared', text='Prepared')
             tree.heading('cast', text='Cast')
             
-            tree.column('name', width=200)
-            tree.column('school', width=100)
-            tree.column('range', width=100)
-            tree.column('duration', width=150)
-            tree.column('components', width=100)
-            tree.column('prepared', width=80)
+            tree.column('name', width=180)
+            tree.column('school', width=90)
+            tree.column('casting_time', width=100)
+            tree.column('range', width=90)
+            tree.column('duration', width=100)
+            tree.column('components', width=80)
+            tree.column('prepared', width=70)
             tree.column('cast', width=60)
             
             tree.pack(side='left', fill='both', expand=True)
@@ -413,6 +471,13 @@ class SpellsTab(BaseTab):
             text="Remove Selected Spell",
             command=self.remove_spell_from_list)
         remove_spell_btn.pack(side='left', padx=2)
+    
+    def bind_mousewheel(self, canvas):
+        """Bind mousewheel scrolling to canvas"""
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
     def update_spellcasting_ability(self):
         """Update spellcasting ability and recalculate DCs"""
@@ -496,6 +561,26 @@ class SpellsTab(BaseTab):
         modifier = self.character.get_spellcasting_modifier()
         mod_str = f"+{modifier}" if modifier >= 0 else str(modifier)
         self.labels['spell_modifier'].config(text=mod_str)
+        
+        # Update range definitions
+        self.update_range_definitions()
+    
+    def update_range_definitions(self):
+        """Update range definitions with calculated values based on caster level"""
+        caster_level = self.character.get_total_level()
+        
+        # D&D 3e range calculations
+        close_range = 25 + (caster_level // 2) * 5
+        medium_range = 100 + (caster_level * 10)
+        long_range = 400 + (caster_level * 40)
+        
+        range_text = (
+            f"Close: {close_range} ft (25 + 5/2 lvls) | "
+            f"Medium: {medium_range} ft (100 + 10/lvl) | "
+            f"Long: {long_range} ft (400 + 40/lvl)"
+        )
+        
+        self.labels['range_definitions'].config(text=range_text)
 
     def add_spell_to_list(self):
         """Add a spell to the spell list"""
@@ -510,6 +595,7 @@ class SpellsTab(BaseTab):
         duration = self.entries['spell_duration'].get().strip()
         components = self.entries['spell_components'].get().strip()
         casting_time = self.entries['spell_casting_time'].get().strip()
+        description = self.entries['spell_description'].get().strip()
         prepared = self.spell_prepared_var.get()
 
         self.character.add_spell(
@@ -520,6 +606,7 @@ class SpellsTab(BaseTab):
             duration=duration,
             components=components,
             casting_time=casting_time,
+            description=description,
             prepared=prepared
         )
 
@@ -532,6 +619,7 @@ class SpellsTab(BaseTab):
         self.entries['spell_duration'].delete(0, tk.END)
         self.entries['spell_components'].delete(0, tk.END)
         self.entries['spell_casting_time'].delete(0, tk.END)
+        self.entries['spell_description'].delete(0, tk.END)
         self.spell_prepared_var.set(False)
 
         self.mark_modified()
@@ -622,15 +710,15 @@ class SpellsTab(BaseTab):
         # Get column clicked
         column = tree.identify_column(event.x)
         
-        # Column #7 is the Cast column (0-indexed as #6, but Tkinter uses 1-indexed)
-        if column == '#7':  # Cast column
+        # Column #8 is the Cast column (after adding casting_time)
+        if column == '#8':  # Cast column
             # Get the item clicked
             item = tree.identify_row(event.y)
             if item:
                 self.cast_spell(tree, item, spell_level)
     
     def on_spell_double_click(self, event):
-        """Handle double-click on spell - toggle prepared status"""
+        """Handle double-click on spell - show detail/edit dialog"""
         # Get which tree was clicked
         tree = event.widget
         
@@ -647,12 +735,149 @@ class SpellsTab(BaseTab):
         # Get column clicked
         column = tree.identify_column(event.x)
         
-        # Don't toggle prepared if clicking on Cast column
-        if column == '#7':  # Cast column
+        # Don't open detail dialog if clicking on Cast column
+        if column == '#8':  # Cast column (was #7, now #8 after adding casting_time)
             return
         
-        # Otherwise, toggle prepared status
-        self.toggle_spell_prepared(event)
+        # Get selected item
+        selection = tree.selection()
+        if not selection:
+            return
+        
+        item = selection[0]
+        index = tree.index(item)
+        
+        # Show detail dialog
+        self.show_spell_detail_dialog(spell_level, index)
+    
+    def show_spell_detail_dialog(self, spell_level, index):
+        """Show detailed view/edit dialog for a spell"""
+        # Find the spell in this level's list
+        level_spells = [
+            s for s in self.character.spells if s['level'] == spell_level]
+        
+        if index >= len(level_spells):
+            return
+        
+        spell = level_spells[index]
+        # Find actual index in full spell list
+        actual_index = self.character.spells.index(spell)
+        
+        # Create dialog window
+        dialog = tk.Toplevel(self.parent)
+        dialog.title(f"Spell Details: {spell['name']}")
+        dialog.geometry("600x500")
+        dialog.transient(self.parent)
+        dialog.grab_set()
+        
+        # Create main frame with scrollbar
+        main_frame = ttk.Frame(dialog)
+        main_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Spell name
+        ttk.Label(main_frame, text="Spell Name:", font=('Arial', 9, 'bold')).grid(
+            row=0, column=0, sticky='e', padx=5, pady=5)
+        name_entry = ttk.Entry(main_frame, width=40)
+        name_entry.insert(0, spell['name'])
+        name_entry.grid(row=0, column=1, columnspan=2, sticky='ew', padx=5, pady=5)
+        
+        # Level
+        ttk.Label(main_frame, text="Level:", font=('Arial', 9, 'bold')).grid(
+            row=1, column=0, sticky='e', padx=5, pady=5)
+        level_var = tk.StringVar(value=str(spell['level']))
+        level_combo = ttk.Combobox(
+            main_frame, textvariable=level_var, width=10,
+            values=[str(i) for i in range(10)], state='readonly')
+        level_combo.grid(row=1, column=1, sticky='w', padx=5, pady=5)
+        
+        # School
+        ttk.Label(main_frame, text="School:", font=('Arial', 9, 'bold')).grid(
+            row=2, column=0, sticky='e', padx=5, pady=5)
+        school_entry = ttk.Entry(main_frame, width=30)
+        school_entry.insert(0, spell.get('school', ''))
+        school_entry.grid(row=2, column=1, columnspan=2, sticky='ew', padx=5, pady=5)
+        
+        # Casting Time
+        ttk.Label(main_frame, text="Casting Time:", font=('Arial', 9, 'bold')).grid(
+            row=3, column=0, sticky='e', padx=5, pady=5)
+        casting_time_entry = ttk.Entry(main_frame, width=30)
+        casting_time_entry.insert(0, spell.get('casting_time', ''))
+        casting_time_entry.grid(row=3, column=1, columnspan=2, sticky='ew', padx=5, pady=5)
+        
+        # Range
+        ttk.Label(main_frame, text="Range:", font=('Arial', 9, 'bold')).grid(
+            row=4, column=0, sticky='e', padx=5, pady=5)
+        range_entry = ttk.Entry(main_frame, width=30)
+        range_entry.insert(0, spell.get('range', ''))
+        range_entry.grid(row=4, column=1, columnspan=2, sticky='ew', padx=5, pady=5)
+        
+        # Duration
+        ttk.Label(main_frame, text="Duration:", font=('Arial', 9, 'bold')).grid(
+            row=5, column=0, sticky='e', padx=5, pady=5)
+        duration_entry = ttk.Entry(main_frame, width=30)
+        duration_entry.insert(0, spell.get('duration', ''))
+        duration_entry.grid(row=5, column=1, columnspan=2, sticky='ew', padx=5, pady=5)
+        
+        # Components
+        ttk.Label(main_frame, text="Components:", font=('Arial', 9, 'bold')).grid(
+            row=6, column=0, sticky='e', padx=5, pady=5)
+        components_entry = ttk.Entry(main_frame, width=30)
+        components_entry.insert(0, spell.get('components', ''))
+        components_entry.grid(row=6, column=1, columnspan=2, sticky='ew', padx=5, pady=5)
+        
+        # Prepared
+        prepared_var = tk.BooleanVar(value=spell.get('prepared', False))
+        prepared_check = ttk.Checkbutton(
+            main_frame, text="Prepared", variable=prepared_var)
+        prepared_check.grid(row=7, column=1, sticky='w', padx=5, pady=5)
+        
+        # Description
+        ttk.Label(main_frame, text="Description:", font=('Arial', 9, 'bold')).grid(
+            row=8, column=0, sticky='ne', padx=5, pady=5)
+        
+        desc_frame = ttk.Frame(main_frame)
+        desc_frame.grid(row=8, column=1, columnspan=2, sticky='nsew', padx=5, pady=5)
+        
+        desc_scrollbar = ttk.Scrollbar(desc_frame)
+        desc_scrollbar.pack(side='right', fill='y')
+        
+        desc_text = tk.Text(
+            desc_frame, width=50, height=10,
+            wrap='word', yscrollcommand=desc_scrollbar.set)
+        desc_text.insert('1.0', spell.get('description', ''))
+        desc_text.pack(side='left', fill='both', expand=True)
+        desc_scrollbar.config(command=desc_text.yview)
+        
+        # Configure grid weights
+        main_frame.columnconfigure(1, weight=1)
+        main_frame.rowconfigure(8, weight=1)
+        
+        # Button frame
+        button_frame = ttk.Frame(dialog)
+        button_frame.pack(fill='x', padx=10, pady=(0, 10))
+        
+        def save_changes():
+            """Save the edited spell"""
+            self.character.spells[actual_index] = {
+                'name': name_entry.get().strip(),
+                'level': int(level_var.get()),
+                'school': school_entry.get().strip(),
+                'casting_time': casting_time_entry.get().strip(),
+                'range': range_entry.get().strip(),
+                'duration': duration_entry.get().strip(),
+                'components': components_entry.get().strip(),
+                'prepared': prepared_var.get(),
+                'description': desc_text.get('1.0', 'end-1c').strip()
+            }
+            self.update_spell_list_display()
+            self.mark_modified()
+            dialog.destroy()
+        
+        save_btn = ttk.Button(button_frame, text="Save", command=save_changes)
+        save_btn.pack(side='left', padx=5)
+        
+        cancel_btn = ttk.Button(button_frame, text="Cancel", command=dialog.destroy)
+        cancel_btn.pack(side='left', padx=5)
     
     def cast_spell(self, tree, item, spell_level):
         """Cast a spell - increment used spell slots for that level"""
@@ -718,6 +943,7 @@ class SpellsTab(BaseTab):
                 tree.insert('', 'end', values=(
                     spell['name'],
                     spell.get('school', ''),
+                    spell.get('casting_time', ''),
                     spell.get('range', ''),
                     spell.get('duration', ''),
                     spell.get('components', ''),
