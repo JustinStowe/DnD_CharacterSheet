@@ -473,8 +473,8 @@ class CharacterSheetGUI:
             # Refresh displays in tabs
             if hasattr(self.skills_tab, 'refresh_skills_display'):
                 self.skills_tab.refresh_skills_display()
-            if hasattr(self.inventory_tab, 'refresh_inventory'):
-                self.inventory_tab.refresh_inventory()
+            if hasattr(self.inventory_tab, 'update_inventory_display'):
+                self.inventory_tab.update_inventory_display()
             
             self.current_file = filename
             self.is_modified = False
