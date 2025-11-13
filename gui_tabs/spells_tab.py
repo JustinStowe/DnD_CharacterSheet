@@ -792,7 +792,7 @@ class SpellsTab(BaseTab):
         # Create dialog window
         dialog = tk.Toplevel(self.parent)
         dialog.title(f"Spell Details: {spell['name']}")
-        dialog.geometry("600x500")
+        dialog.geometry("600x600")
         dialog.transient(self.parent)
         dialog.grab_set()
         
