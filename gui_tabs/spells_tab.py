@@ -353,7 +353,8 @@ class SpellsTab(BaseTab):
             'range',
             'duration',
             'components',
-            'prepared')
+            'prepared',
+            'cast')
         
         for level in range(10):
             # Create frame for this spell level
@@ -380,6 +381,7 @@ class SpellsTab(BaseTab):
             tree.heading('duration', text='Duration')
             tree.heading('components', text='Components')
             tree.heading('prepared', text='Prepared')
+            tree.heading('cast', text='Cast')
             
             tree.column('name', width=200)
             tree.column('school', width=100)
@@ -387,13 +389,15 @@ class SpellsTab(BaseTab):
             tree.column('duration', width=150)
             tree.column('components', width=100)
             tree.column('prepared', width=80)
+            tree.column('cast', width=60)
             
             tree.pack(side='left', fill='both', expand=True)
             scrollbar.config(command=tree.yview)
             
             # Bind events
-            tree.bind('<Double-1>', self.toggle_spell_prepared)
+            tree.bind('<Double-1>', self.on_spell_double_click)
             tree.bind('<Delete>', self.delete_spell)
+            tree.bind('<Button-1>', self.on_spell_click)
             
             self.spell_level_trees[level] = tree
         
@@ -595,6 +599,98 @@ class SpellsTab(BaseTab):
         """Handle delete key press to remove spell"""
         self.remove_spell_from_list()
 
+    def on_spell_click(self, event):
+        """Handle single click on spell - check if Cast button was clicked"""
+        # Get which tree was clicked
+        tree = event.widget
+        
+        # Find which level tree this is
+        spell_level = None
+        for level, t in self.spell_level_trees.items():
+            if t == tree:
+                spell_level = level
+                break
+        
+        if spell_level is None:
+            return
+        
+        # Get the region clicked
+        region = tree.identify_region(event.x, event.y)
+        if region != "cell":
+            return
+        
+        # Get column clicked
+        column = tree.identify_column(event.x)
+        
+        # Column #7 is the Cast column (0-indexed as #6, but Tkinter uses 1-indexed)
+        if column == '#7':  # Cast column
+            # Get the item clicked
+            item = tree.identify_row(event.y)
+            if item:
+                self.cast_spell(tree, item, spell_level)
+    
+    def on_spell_double_click(self, event):
+        """Handle double-click on spell - toggle prepared status"""
+        # Get which tree was clicked
+        tree = event.widget
+        
+        # Find which level tree this is
+        spell_level = None
+        for level, t in self.spell_level_trees.items():
+            if t == tree:
+                spell_level = level
+                break
+        
+        if spell_level is None:
+            return
+        
+        # Get column clicked
+        column = tree.identify_column(event.x)
+        
+        # Don't toggle prepared if clicking on Cast column
+        if column == '#7':  # Cast column
+            return
+        
+        # Otherwise, toggle prepared status
+        self.toggle_spell_prepared(event)
+    
+    def cast_spell(self, tree, item, spell_level):
+        """Cast a spell - increment used spell slots for that level"""
+        # Check if there are available spell slots
+        max_slots = self.character.spell_slots_max.get(spell_level, 0)
+        used_slots = self.character.spell_slots_used.get(spell_level, 0)
+        remaining = max_slots - used_slots
+        
+        if remaining <= 0:
+            messagebox.showwarning(
+                "No Spell Slots",
+                f"You have no spell slots remaining for level {spell_level} spells.\n\n"
+                f"Used: {used_slots}/{max_slots}")
+            return
+        
+        # Get spell name for confirmation
+        values = tree.item(item, 'values')
+        spell_name = values[0] if values else "spell"
+        
+        # Increment used spell slots
+        self.character.spell_slots_used[spell_level] = used_slots + 1
+        
+        # Update the GUI entry
+        self.entries[f'spell_used_{spell_level}'].delete(0, tk.END)
+        self.entries[f'spell_used_{spell_level}'].insert(0, str(used_slots + 1))
+        
+        # Update remaining label
+        self.update_spell_slots(spell_level)
+        
+        # Show confirmation
+        new_remaining = remaining - 1
+        messagebox.showinfo(
+            "Spell Cast",
+            f"Cast: {spell_name}\n\n"
+            f"Level {spell_level} Slots Remaining: {new_remaining}/{max_slots}")
+        
+        self.mark_modified()
+
     def update_spell_list_display(self):
         """Update all spell list treeviews"""
         # Clear all treeviews
@@ -625,5 +721,6 @@ class SpellsTab(BaseTab):
                     spell.get('range', ''),
                     spell.get('duration', ''),
                     spell.get('components', ''),
-                    prepared_text
+                    prepared_text,
+                    '[Cast]'
                 ))
