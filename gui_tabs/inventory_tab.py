@@ -289,6 +289,9 @@ class InventoryTab(BaseTab):
         self.inventory_tree.pack(fill='both', expand=True)
         scrollbar.config(command=self.inventory_tree.yview)
 
+        # Bind double-click to edit item
+        self.inventory_tree.bind('<Double-1>', self.edit_inventory_item)
+
         # Remove button
         remove_frame = ttk.Frame(inventory_frame)
         remove_frame.pack(fill='x', pady=(5, 0))
@@ -355,6 +358,111 @@ class InventoryTab(BaseTab):
         # Update display
         self.update_inventory_display()
         self.mark_modified()
+
+    def edit_inventory_item(self, event):
+        """Edit selected item from inventory (double-click handler)"""
+        selection = self.inventory_tree.selection()
+        if not selection:
+            return
+
+        # Get index of selected item
+        item = selection[0]
+        index = self.inventory_tree.index(item)
+        
+        # Get current item data
+        current_item = self.character.inventory[index]
+        
+        # Create edit dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Edit Item")
+        dialog.geometry("450x250")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Create form
+        form_frame = ttk.Frame(dialog, padding=20)
+        form_frame.pack(fill='both', expand=True)
+        
+        ttk.Label(form_frame, text="Item Name:").grid(
+            row=0, column=0, sticky='e', padx=5, pady=5)
+        name_entry = ttk.Entry(form_frame, width=30)
+        name_entry.grid(row=0, column=1, padx=5, pady=5, sticky='ew')
+        name_entry.insert(0, current_item['name'])
+        
+        ttk.Label(form_frame, text="Weight (lbs):").grid(
+            row=1, column=0, sticky='e', padx=5, pady=5)
+        weight_entry = ttk.Entry(form_frame, width=15)
+        weight_entry.grid(row=1, column=1, padx=5, pady=5, sticky='w')
+        weight_entry.insert(0, str(current_item['weight']))
+        
+        ttk.Label(form_frame, text="Quantity:").grid(
+            row=2, column=0, sticky='e', padx=5, pady=5)
+        quantity_entry = ttk.Entry(form_frame, width=15)
+        quantity_entry.grid(row=2, column=1, padx=5, pady=5, sticky='w')
+        quantity_entry.insert(0, str(current_item['quantity']))
+        
+        ttk.Label(form_frame, text="Notes:").grid(
+            row=3, column=0, sticky='e', padx=5, pady=5)
+        notes_entry = ttk.Entry(form_frame, width=30)
+        notes_entry.grid(row=3, column=1, padx=5, pady=5, sticky='ew')
+        notes_entry.insert(0, current_item.get('notes', ''))
+        
+        form_frame.columnconfigure(1, weight=1)
+        
+        def save_changes():
+            try:
+                name = name_entry.get().strip()
+                if not name:
+                    messagebox.showwarning(
+                        "Missing Name", 
+                        "Please enter an item name.",
+                        parent=dialog)
+                    return
+                
+                weight_str = weight_entry.get().strip()
+                weight = float(weight_str) if weight_str else 0.0
+                
+                quantity_str = quantity_entry.get().strip()
+                quantity = int(quantity_str) if quantity_str else 1
+                
+                notes = notes_entry.get().strip()
+                
+                # Update the item in character's inventory
+                self.character.inventory[index] = {
+                    'name': name,
+                    'weight': weight,
+                    'quantity': quantity,
+                    'notes': notes
+                }
+                
+                # Update display
+                self.update_inventory_display()
+                self.mark_modified()
+                
+                dialog.destroy()
+                
+            except ValueError:
+                messagebox.showerror(
+                    "Invalid Input",
+                    "Please enter valid numbers for weight and quantity.",
+                    parent=dialog)
+        
+        # Buttons
+        button_frame = ttk.Frame(dialog)
+        button_frame.pack(fill='x', padx=20, pady=(0, 20))
+        
+        ttk.Button(
+            button_frame,
+            text="Save",
+            command=save_changes).pack(side='left', padx=5)
+        ttk.Button(
+            button_frame,
+            text="Cancel",
+            command=dialog.destroy).pack(side='left', padx=5)
+        
+        # Focus on name entry
+        name_entry.focus()
+        name_entry.select_range(0, tk.END)
 
     def update_inventory_display(self):
         """Update the inventory treeview and weight/capacity displays"""
