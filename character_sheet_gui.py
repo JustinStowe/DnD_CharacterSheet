@@ -591,16 +591,9 @@ class CharacterSheetGUI:
             total_spent = sum(self.character.skills.values())
             self.labels['skill_points_spent'].config(text=str(total_spent))
         
-        # Spellcasting
-        if hasattr(self, 'spellcasting_ability_var'):
-            self.spellcasting_ability_var.set(self.character.spellcasting_ability)
-            
-            for level in range(10):
-                self.set_entry(f'spell_max_{level}', str(self.character.spell_slots_max.get(level, 0)))
-                self.set_entry(f'spell_used_{level}', str(self.character.spell_slots_used.get(level, 0)))
-                self.update_spell_slots(level)
-            
-            self.update_spell_list_display()
+        # Spellcasting (delegate to spells tab if available)
+        if hasattr(self, 'spells_tab') and hasattr(self.spells_tab, 'update'):
+            self.spells_tab.update()
         
         # Feats and Abilities
         if hasattr(self, 'feats_tree'):

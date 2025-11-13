@@ -471,13 +471,24 @@ class SpellsTab(BaseTab):
             text="Remove Selected Spell",
             command=self.remove_spell_from_list)
         remove_spell_btn.pack(side='left', padx=2)
-    
-    def bind_mousewheel(self, canvas):
-        """Bind mousewheel scrolling to canvas"""
-        def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def update(self):
+        """Update spell tab display when character data changes"""
+        # Update spell slots display
+        for level in range(10):
+            self.set_entry(f'spell_max_{level}', str(self.character.spell_slots_max.get(level, 0)))
+            self.set_entry(f'spell_used_{level}', str(self.character.spell_slots_used.get(level, 0)))
+            self.update_spell_slots(level)
         
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        # Update spellcasting ability
+        if hasattr(self, 'spellcasting_ability_var'):
+            self.spellcasting_ability_var.set(self.character.spellcasting_ability)
+        
+        # Update spell DCs and range definitions
+        self.update_spell_dcs()
+        
+        # Update spell list display
+        self.update_spell_list_display()
 
     def update_spellcasting_ability(self):
         """Update spellcasting ability and recalculate DCs"""
