@@ -475,6 +475,8 @@ class CharacterSheetGUI:
                 self.skills_tab.refresh_skills_display()
             if hasattr(self.inventory_tab, 'update_inventory_display'):
                 self.inventory_tab.update_inventory_display()
+            if hasattr(self.inventory_tab, 'load_currency'):
+                self.inventory_tab.load_currency()
             
             self.current_file = filename
             self.is_modified = False
@@ -611,9 +613,11 @@ class CharacterSheetGUI:
             self.spells_tab.update()
         
         # Feats and Abilities
-        if hasattr(self, 'feats_tree'):
-            self.update_feats_display()
-            self.update_abilities_display()
+        if hasattr(self, 'feats_tab'):
+            if hasattr(self.feats_tab, 'update_feats_display'):
+                self.feats_tab.update_feats_display()
+            if hasattr(self.feats_tab, 'update_abilities_display'):
+                self.feats_tab.update_abilities_display()
         
         # Weapons and Magic Items (delegate to tabs if available)
         if hasattr(self, 'main_tab') and hasattr(self.main_tab, 'refresh_weapons'):

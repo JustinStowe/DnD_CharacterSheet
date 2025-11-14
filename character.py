@@ -457,6 +457,14 @@ class Character:
         # Inventory
         self.inventory = []  # List of dicts: {'name': str, 'weight': float, 'quantity': int, 'notes': str}
         
+        # Currency (D&D 3e standard denominations)
+        self.currency = {
+            'platinum': 0,  # pp (1 pp = 10 gp)
+            'gold': 0,      # gp (standard)
+            'silver': 0,    # sp (10 sp = 1 gp)
+            'copper': 0     # cp (100 cp = 1 gp)
+        }
+        
         # Spellcasting
         self.spellcasting_ability = 'intelligence'  # 'intelligence', 'wisdom', or 'charisma'
         self.spell_slots_max = {
@@ -1328,6 +1336,18 @@ class Character:
         
         # Inventory
         self.inventory = data.get('inventory', [])
+        
+        # Currency - with backward compatibility for old save files
+        if 'currency' in data:
+            self.currency = data['currency'].copy()
+        else:
+            # Old save file - initialize with default currency
+            self.currency = {
+                'platinum': 0,
+                'gold': 0,
+                'silver': 0,
+                'copper': 0
+            }
         
         # Spellcasting
         self.spellcasting_ability = data.get('spellcasting_ability', 'intelligence')

@@ -198,6 +198,77 @@ class InventoryTab(BaseTab):
             pen_info_frame, text="0 ft", relief='sunken', width=10)
         self.labels['enc_speed'].grid(row=0, column=5, padx=5, pady=2)
 
+        # Currency section
+        currency_frame = ttk.LabelFrame(
+            main_container, text="Currency", padding=10)
+        currency_frame.pack(fill='x', padx=5, pady=5)
+
+        curr_grid = ttk.Frame(currency_frame)
+        curr_grid.pack(fill='x')
+
+        # Platinum
+        ttk.Label(
+            curr_grid,
+            text="Platinum (pp):",
+            font=('Arial', 9, 'bold')).grid(
+            row=0, column=0, sticky='e', padx=5, pady=2)
+        self.entries['currency_platinum'] = ttk.Entry(curr_grid, width=12)
+        self.entries['currency_platinum'].grid(row=0, column=1, padx=5, pady=2)
+        self.entries['currency_platinum'].insert(0, "0")
+        self.entries['currency_platinum'].bind(
+            '<KeyRelease>', lambda e: self.update_currency_total())
+
+        # Gold
+        ttk.Label(
+            curr_grid,
+            text="Gold (gp):",
+            font=('Arial', 9, 'bold')).grid(
+            row=0, column=2, sticky='e', padx=5, pady=2)
+        self.entries['currency_gold'] = ttk.Entry(curr_grid, width=12)
+        self.entries['currency_gold'].grid(row=0, column=3, padx=5, pady=2)
+        self.entries['currency_gold'].insert(0, "0")
+        self.entries['currency_gold'].bind(
+            '<KeyRelease>', lambda e: self.update_currency_total())
+
+        # Silver
+        ttk.Label(
+            curr_grid,
+            text="Silver (sp):",
+            font=('Arial', 9, 'bold')).grid(
+            row=1, column=0, sticky='e', padx=5, pady=2)
+        self.entries['currency_silver'] = ttk.Entry(curr_grid, width=12)
+        self.entries['currency_silver'].grid(row=1, column=1, padx=5, pady=2)
+        self.entries['currency_silver'].insert(0, "0")
+        self.entries['currency_silver'].bind(
+            '<KeyRelease>', lambda e: self.update_currency_total())
+
+        # Copper
+        ttk.Label(
+            curr_grid,
+            text="Copper (cp):",
+            font=('Arial', 9, 'bold')).grid(
+            row=1, column=2, sticky='e', padx=5, pady=2)
+        self.entries['currency_copper'] = ttk.Entry(curr_grid, width=12)
+        self.entries['currency_copper'].grid(row=1, column=3, padx=5, pady=2)
+        self.entries['currency_copper'].insert(0, "0")
+        self.entries['currency_copper'].bind(
+            '<KeyRelease>', lambda e: self.update_currency_total())
+
+        # Total value in gold
+        ttk.Label(
+            curr_grid,
+            text="Total Value:",
+            font=('Arial', 10, 'bold')).grid(
+            row=2, column=0, sticky='e', padx=5, pady=(10, 2))
+        self.labels['currency_total'] = ttk.Label(
+            curr_grid,
+            text="0 gp",
+            relief='sunken',
+            width=15,
+            font=('Arial', 10, 'bold'))
+        self.labels['currency_total'].grid(
+            row=2, column=1, columnspan=3, sticky='w', padx=5, pady=(10, 2))
+
         # Inventory list frame
         inventory_frame = ttk.LabelFrame(
             main_container, text="Inventory", padding=10)
@@ -522,3 +593,46 @@ class InventoryTab(BaseTab):
             text=str(penalties['check_penalty']))
         self.labels['enc_speed'].config(
             text=f"{penalties['speed_reduction']} ft")
+
+    def update_currency_total(self):
+        """Calculate and display total currency value in gold pieces"""
+        try:
+            # Get currency values, default to 0 if empty or invalid
+            pp = float(self.entries['currency_platinum'].get() or 0)
+            gp = float(self.entries['currency_gold'].get() or 0)
+            sp = float(self.entries['currency_silver'].get() or 0)
+            cp = float(self.entries['currency_copper'].get() or 0)
+            
+            # Convert to gold pieces
+            # 1 pp = 10 gp, 10 sp = 1 gp, 100 cp = 1 gp
+            total_gp = (pp * 10) + gp + (sp / 10) + (cp / 100)
+            
+            self.labels['currency_total'].config(text=f"{total_gp:.2f} gp")
+            
+            # Update character's currency
+            self.character.currency['platinum'] = int(pp)
+            self.character.currency['gold'] = int(gp)
+            self.character.currency['silver'] = int(sp)
+            self.character.currency['copper'] = int(cp)
+            
+            self.mark_modified()
+        except ValueError:
+            # If there's an error in conversion, just ignore it
+            pass
+
+    def load_currency(self):
+        """Load currency values from character into UI"""
+        currency = self.character.currency
+        self.entries['currency_platinum'].delete(0, tk.END)
+        self.entries['currency_platinum'].insert(0, str(currency.get('platinum', 0)))
+        
+        self.entries['currency_gold'].delete(0, tk.END)
+        self.entries['currency_gold'].insert(0, str(currency.get('gold', 0)))
+        
+        self.entries['currency_silver'].delete(0, tk.END)
+        self.entries['currency_silver'].insert(0, str(currency.get('silver', 0)))
+        
+        self.entries['currency_copper'].delete(0, tk.END)
+        self.entries['currency_copper'].insert(0, str(currency.get('copper', 0)))
+        
+        self.update_currency_total()
