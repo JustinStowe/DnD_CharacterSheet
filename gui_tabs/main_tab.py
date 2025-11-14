@@ -118,7 +118,7 @@ class MainTab(BaseTab):
             row=2, column=1, sticky='w', padx=2, pady=2)
         self.entries['experience'].insert(0, "0")
         self.entries['experience'].bind(
-            '<FocusOut>', lambda e: self.update_from_entry('experience'))
+            '<FocusOut>', lambda e: self.gui.update_from_entry('experience'))
         self.entries['experience'].bind(
             '<KeyRelease>', lambda e: self.mark_modified())
 
@@ -162,7 +162,7 @@ class MainTab(BaseTab):
 
         # Bind update events for level (affects many things)
         self.entries['level'].bind('<FocusOut>',
-                                   lambda e: self.update_from_entry('level'))
+                                   lambda e: self.gui.update_from_entry('level'))
 
         # Ability Scores Section
         ability_frame = ttk.LabelFrame(
@@ -938,9 +938,14 @@ class MainTab(BaseTab):
                     self.character.update_class_based_stats()
                     update_total_label()
                     self.update_class_display()
+                    # Refresh all GUI fields to reflect updated HP, saves, etc.
+                    self.gui.populate_fields_from_character()
                     self.gui.update_all_calculated_fields()
                     if hasattr(self.gui, 'spells_tab'):
                         self.gui.spells_tab.update()
+                    # Refresh skills display to show updated skill points
+                    if hasattr(self.gui, 'skills_tab') and hasattr(self.gui.skills_tab, 'refresh_skills_display'):
+                        self.gui.skills_tab.refresh_skills_display()
                     self.mark_modified()
 
                 level_spinbox.config(command=update_level)
@@ -966,9 +971,14 @@ class MainTab(BaseTab):
             self.character.update_class_based_stats()
             refresh_classes_display()
             self.update_class_display()
+            # Refresh all GUI fields to reflect updated HP, saves, etc.
+            self.gui.populate_fields_from_character()
             self.gui.update_all_calculated_fields()
             if hasattr(self.gui, 'spells_tab'):
                 self.gui.spells_tab.update()
+            # Refresh skills display to show updated skill points
+            if hasattr(self.gui, 'skills_tab') and hasattr(self.gui.skills_tab, 'refresh_skills_display'):
+                self.gui.skills_tab.refresh_skills_display()
             self.mark_modified()
 
         def add_new_class():
@@ -1119,9 +1129,14 @@ class MainTab(BaseTab):
                 self.character.update_class_based_stats()
                 refresh_classes_display()
                 self.update_class_display()
+                # Refresh all GUI fields to reflect updated HP, saves, etc.
+                self.gui.populate_fields_from_character()
                 self.gui.update_all_calculated_fields()
                 if hasattr(self.gui, 'spells_tab'):
                     self.gui.spells_tab.update()
+                # Refresh skills display to show updated skill points
+                if hasattr(self.gui, 'skills_tab') and hasattr(self.gui.skills_tab, 'refresh_skills_display'):
+                    self.gui.skills_tab.refresh_skills_display()
                 self.mark_modified()
                 add_dialog.destroy()
 

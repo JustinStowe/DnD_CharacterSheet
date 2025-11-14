@@ -1,13 +1,20 @@
+
 """
 D&D 3rd Edition Interactive Character Sheet GUI
-Main application file - Refactored with modular tab structure
+Main application file - Modular tab structure
+Organized, efficient, and easy to follow.
 """
 
+# --- Standard Library Imports ---
+import os
+import json
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-import json
-import os
+
+# --- Project Imports ---
 from character import Character, CLASS_DEFINITIONS
+from dialogs.character_creation_dialog import CharacterCreationDialog
+from dialogs.startup_dialog import StartupDialog
 from prestige_classes.prestige_classes import (
     PRESTIGE_CLASS_DEFINITIONS,
     get_all_prestige_classes,
@@ -19,14 +26,58 @@ from Epic_levels.epic_levels import (
     get_epic_level_description,
     get_all_epic_feats
 )
-
-# Import modular tabs
 from gui_tabs import MainTab, SkillsTab, InventoryTab, SpellsTab, FeatsTab, MagicItemsTab
+
+# --- Tab Manager Class ---
+class TabManager:
+    """
+    Manages static tabs for the character sheet GUI.
+    Handles notebook creation, tab frame setup, and tab access.
+    """
+    def __init__(self, root, tab_defs):
+        """
+        root: parent Tk widget
+        tab_defs: list of tuples (tab_name, tab_class)
+        """
+        self.notebook = ttk.Notebook(root)
+        self.notebook.pack(fill='both', expand=True, padx=5, pady=5)
+        self.tabs = {}
+        self.frames = {}
+        for name, tab_class in tab_defs:
+            frame = ttk.Frame(self.notebook)
+            self.notebook.add(frame, text=name)
+            self.frames[name] = frame
+            self.tabs[name] = tab_class(frame)
+
+    def get_tab(self, name):
+        return self.tabs.get(name)
+
+    def get_frame(self, name):
+        return self.frames.get(name)
+
+    def build_all(self):
+        for tab in self.tabs.values():
+            if hasattr(tab, 'build'):
+                tab.build()
+
+    def update_tab(self, name):
+        tab = self.get_tab(name)
+        if tab and hasattr(tab, 'update'):
+            tab.update()
+
+    def get_notebook(self):
+        return self.notebook
+
+# --- Main GUI Class ---
 
 
 class CharacterSheetGUI:
-    """Main GUI for the D&D 3e Character Sheet"""
-    
+    """
+    Main GUI for the D&D 3e Character Sheet
+    Organized by: Initialization, Menu, Dialogs, Tab Setup, Update, Save/Load, Utility
+    """
+
+    # --- Initialization ---
     def __init__(self, root):
         self.root = root
         self.root.title("D&D 3rd Edition Character Sheet")
@@ -46,40 +97,27 @@ class CharacterSheetGUI:
         # Create menu bar
         self.create_menu()
         
-        # Create main notebook for tabs
-        self.notebook = ttk.Notebook(root)
-        self.notebook.pack(fill='both', expand=True, padx=5, pady=5)
-        
-        # Create tab frames for modular tabs
-        self.main_tab_frame = ttk.Frame(self.notebook)
-        self.skills_tab_frame = ttk.Frame(self.notebook)
-        self.inventory_tab_frame = ttk.Frame(self.notebook)
-        self.spells_tab_frame = ttk.Frame(self.notebook)
-        self.feats_tab_frame = ttk.Frame(self.notebook)
-        self.magic_items_tab_frame = ttk.Frame(self.notebook)
-        
-        self.notebook.add(self.main_tab_frame, text='Main')
-        self.notebook.add(self.skills_tab_frame, text='Skills')
-        self.notebook.add(self.inventory_tab_frame, text='Inventory')
-        self.notebook.add(self.spells_tab_frame, text='Spells')
-        self.notebook.add(self.feats_tab_frame, text='Feats & Abilities')
-        self.notebook.add(self.magic_items_tab_frame, text='Magic Items')
-        
-        # Initialize all modular tabs
-        self.main_tab = MainTab(self.main_tab_frame, self)
-        self.skills_tab = SkillsTab(self.skills_tab_frame, self)
-        self.inventory_tab = InventoryTab(self.inventory_tab_frame, self)
-        self.spells_tab = SpellsTab(self.spells_tab_frame, self)
-        self.feats_tab = FeatsTab(self.feats_tab_frame, self)
-        self.magic_items_tab = MagicItemsTab(self.magic_items_tab_frame, self)
-        
+        # Tab definitions: (tab name, tab class)
+        tab_defs = [
+            ('Main', lambda frame: MainTab(frame, self)),
+            ('Skills', lambda frame: SkillsTab(frame, self)),
+            ('Inventory', lambda frame: InventoryTab(frame, self)),
+            ('Spells', lambda frame: SpellsTab(frame, self)),
+            ('Feats & Abilities', lambda frame: FeatsTab(frame, self)),
+            ('Magic Items', lambda frame: MagicItemsTab(frame, self)),
+        ]
+        self.tab_manager = TabManager(root, tab_defs)
+
+        # Assign tab instances for compatibility
+        self.main_tab = self.tab_manager.get_tab('Main')
+        self.skills_tab = self.tab_manager.get_tab('Skills')
+        self.inventory_tab = self.tab_manager.get_tab('Inventory')
+        self.spells_tab = self.tab_manager.get_tab('Spells')
+        self.feats_tab = self.tab_manager.get_tab('Feats & Abilities')
+        self.magic_items_tab = self.tab_manager.get_tab('Magic Items')
+
         # Build all tabs using modular architecture
-        self.main_tab.build()
-        self.skills_tab.build()
-        self.inventory_tab.build()
-        self.spells_tab.build()
-        self.feats_tab.build()
-        self.magic_items_tab.build()
+        self.tab_manager.build_all()
         
         # Initial update - delegate to main tab
         if hasattr(self.main_tab, 'update_class_display'):
@@ -89,6 +127,7 @@ class CharacterSheetGUI:
         # Set up window close protocol
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
     
+    # --- Menu Bar ---
     def create_menu(self):
         """Create the menu bar"""
         menubar = tk.Menu(self.root)
@@ -111,6 +150,7 @@ class CharacterSheetGUI:
         self.root.bind('<Control-s>', lambda e: self.save_character())
         self.root.bind('<Control-Shift-S>', lambda e: self.save_character_as())
     
+    # --- Window Close Handling ---
     def on_closing(self):
         """Handle window close event"""
         if self.is_modified:
@@ -127,12 +167,14 @@ class CharacterSheetGUI:
         else:
             self.root.destroy()
     
+    # --- Modification Tracking ---
     def mark_modified(self):
         """Mark the character as modified"""
         if not self.is_modified:
             self.is_modified = True
             self.update_title()
     
+    # --- Title Update ---
     def update_title(self):
         """Update window title with file name and modified status"""
         title = "D&D 3rd Edition Character Sheet"
@@ -143,6 +185,7 @@ class CharacterSheetGUI:
             title = f"*{title}"
         self.root.title(title)
     
+    # --- Character Creation ---
     def new_character(self):
         """Create a new character"""
         if self.is_modified:
@@ -181,248 +224,21 @@ class CharacterSheetGUI:
             
             self.update_title()
     
+    # --- Character Creation Dialog ---
     def show_character_creation_dialog(self):
         """Show dialog for creating a new character. Returns True if character was created."""
-        dialog = tk.Toplevel(self.root)
-        dialog.title("Create New Character")
-        dialog.geometry("500x600")
-        dialog.transient(self.root)
-        dialog.grab_set()
-        
-        # Variables to store user input
-        result = {'created': False}
-        
-        # Create scrollable frame
-        canvas = tk.Canvas(dialog)
-        scrollbar = ttk.Scrollbar(dialog, orient="vertical", command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-        
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        dialog = CharacterCreationDialog(
+            self.root,
+            Character,
+            CLASS_DEFINITIONS,
+            self.bind_mousewheel
         )
+        result = dialog.show()
         
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        # Title
-        ttk.Label(scrollable_frame, text="Create New Character", 
-                 font=('TkDefaultFont', 14, 'bold')).pack(pady=10)
-        
-        # Name
-        name_frame = ttk.Frame(scrollable_frame)
-        name_frame.pack(fill="x", padx=20, pady=5)
-        ttk.Label(name_frame, text="Character Name:", width=20).pack(side="left")
-        name_var = tk.StringVar(value="")
-        name_entry = ttk.Entry(name_frame, textvariable=name_var, width=30)
-        name_entry.pack(side="left", fill="x", expand=True)
-        
-        # Player Name
-        player_frame = ttk.Frame(scrollable_frame)
-        player_frame.pack(fill="x", padx=20, pady=5)
-        ttk.Label(player_frame, text="Player Name:", width=20).pack(side="left")
-        player_var = tk.StringVar(value="")
-        ttk.Entry(player_frame, textvariable=player_var, width=30).pack(side="left", fill="x", expand=True)
-        
-        # Race
-        race_frame = ttk.Frame(scrollable_frame)
-        race_frame.pack(fill="x", padx=20, pady=5)
-        ttk.Label(race_frame, text="Race:", width=20).pack(side="left")
-        races = ["Human", "Dwarf", "Elf", "Gnome", "Half-Elf", "Half-Orc", "Halfling"]
-        race_var = tk.StringVar(value="Human")
-        ttk.Combobox(race_frame, textvariable=race_var, values=races, width=28).pack(side="left")
-        
-        # Class
-        class_frame = ttk.Frame(scrollable_frame)
-        class_frame.pack(fill="x", padx=20, pady=5)
-        ttk.Label(class_frame, text="Starting Class:", width=20).pack(side="left")
-        class_names = sorted(CLASS_DEFINITIONS.keys())
-        class_var = tk.StringVar(value="Fighter")
-        ttk.Combobox(class_frame, textvariable=class_var, values=class_names, width=28).pack(side="left")
-        
-        # Alignment
-        align_frame = ttk.Frame(scrollable_frame)
-        align_frame.pack(fill="x", padx=20, pady=5)
-        ttk.Label(align_frame, text="Alignment:", width=20).pack(side="left")
-        alignments = ["Lawful Good", "Neutral Good", "Chaotic Good",
-                     "Lawful Neutral", "True Neutral", "Chaotic Neutral",
-                     "Lawful Evil", "Neutral Evil", "Chaotic Evil"]
-        align_var = tk.StringVar(value="True Neutral")
-        ttk.Combobox(align_frame, textvariable=align_var, values=alignments, width=28).pack(side="left")
-        
-        # Deity
-        deity_frame = ttk.Frame(scrollable_frame)
-        deity_frame.pack(fill="x", padx=20, pady=5)
-        ttk.Label(deity_frame, text="Deity:", width=20).pack(side="left")
-        deity_var = tk.StringVar(value="")
-        ttk.Entry(deity_frame, textvariable=deity_var, width=30).pack(side="left", fill="x", expand=True)
-        
-        # Gender
-        gender_frame = ttk.Frame(scrollable_frame)
-        gender_frame.pack(fill="x", padx=20, pady=5)
-        ttk.Label(gender_frame, text="Gender:", width=20).pack(side="left")
-        gender_var = tk.StringVar(value="")
-        ttk.Entry(gender_frame, textvariable=gender_var, width=30).pack(side="left", fill="x", expand=True)
-        
-        # Height
-        height_frame = ttk.Frame(scrollable_frame)
-        height_frame.pack(fill="x", padx=20, pady=5)
-        ttk.Label(height_frame, text="Height:", width=20).pack(side="left")
-        height_var = tk.StringVar(value="")
-        ttk.Entry(height_frame, textvariable=height_var, width=30).pack(side="left", fill="x", expand=True)
-        
-        # Weight
-        weight_frame = ttk.Frame(scrollable_frame)
-        weight_frame.pack(fill="x", padx=20, pady=5)
-        ttk.Label(weight_frame, text="Weight:", width=20).pack(side="left")
-        weight_var = tk.StringVar(value="")
-        ttk.Entry(weight_frame, textvariable=weight_var, width=30).pack(side="left", fill="x", expand=True)
-        
-        # Hair Color
-        hair_frame = ttk.Frame(scrollable_frame)
-        hair_frame.pack(fill="x", padx=20, pady=5)
-        ttk.Label(hair_frame, text="Hair Color:", width=20).pack(side="left")
-        hair_var = tk.StringVar(value="")
-        ttk.Entry(hair_frame, textvariable=hair_var, width=30).pack(side="left", fill="x", expand=True)
-        
-        # Eye Color
-        eye_frame = ttk.Frame(scrollable_frame)
-        eye_frame.pack(fill="x", padx=20, pady=5)
-        ttk.Label(eye_frame, text="Eye Color:", width=20).pack(side="left")
-        eye_var = tk.StringVar(value="")
-        ttk.Entry(eye_frame, textvariable=eye_var, width=30).pack(side="left", fill="x", expand=True)
-        
-        # Ability Scores Section
-        ttk.Separator(scrollable_frame, orient='horizontal').pack(fill='x', padx=20, pady=10)
-        ttk.Label(scrollable_frame, text="Ability Scores", 
-                 font=('TkDefaultFont', 12, 'bold')).pack(pady=5)
-        
-        ability_vars = {}
-        for ability in ['Strength', 'Dexterity', 'Constitution', 'Intelligence', 'Wisdom', 'Charisma']:
-            frame = ttk.Frame(scrollable_frame)
-            frame.pack(fill="x", padx=20, pady=3)
-            ttk.Label(frame, text=f"{ability}:", width=20).pack(side="left")
-            var = tk.IntVar(value=10)
-            ability_vars[ability.lower()] = var
-            spinbox = ttk.Spinbox(frame, from_=3, to=18, textvariable=var, width=10)
-            spinbox.pack(side="left")
-            ttk.Label(frame, text="(Modifier: ", width=12).pack(side="left")
-            mod_label = ttk.Label(frame, text="+0)", width=5)
-            mod_label.pack(side="left")
-            
-            # Update modifier display when ability score changes
-            def update_mod(label=mod_label, v=var):
-                score = v.get()
-                mod = (score - 10) // 2
-                label.config(text=f"{'+' if mod >= 0 else ''}{mod})")
-            var.trace_add('write', lambda *args, l=mod_label, v=var: update_mod(l, v))
-        
-        # Buttons
-        button_frame = ttk.Frame(scrollable_frame)
-        button_frame.pack(pady=20)
-        
-        def create_character():
-            if not name_var.get():
-                messagebox.showwarning("Missing Information", "Please enter a character name.", parent=dialog)
-                name_entry.focus()
-                return
-            
-            # Create the character
-            self.character = Character()
-            self.character.name = name_var.get()
-            self.character.player = player_var.get()
-            self.character.race = race_var.get()
-            self.character.alignment = align_var.get()
-            self.character.deity = deity_var.get()
-            self.character.gender = gender_var.get()
-            self.character.height = height_var.get()
-            self.character.weight = weight_var.get()
-            self.character.hair_color = hair_var.get()
-            self.character.eye_color = eye_var.get()
-            
-            # Set ability scores
-            self.character.strength = ability_vars['strength'].get()
-            self.character.dexterity = ability_vars['dexterity'].get()
-            self.character.constitution = ability_vars['constitution'].get()
-            self.character.intelligence = ability_vars['intelligence'].get()
-            self.character.wisdom = ability_vars['wisdom'].get()
-            self.character.charisma = ability_vars['charisma'].get()
-            
-            # Set starting class
-            starting_class = class_var.get()
-            self.character.classes = [{'name': starting_class, 'level': 1}]
-            self.character.character_class = starting_class
-            self.character.level = 1
-            
-            # Initialize hit points based on class
-            class_info = CLASS_DEFINITIONS.get(starting_class, CLASS_DEFINITIONS['Fighter'])
-            hit_die = class_info.get('hit_die', 10)
-            # First level gets max HP + Con modifier
-            con_mod = self.character.get_con_modifier()
-            self.character.max_hp = hit_die + con_mod
-            self.character.current_hp = self.character.max_hp
-            self.character.hit_dice = [hit_die]
-            
-            # Calculate initial stats
-            self.character.update_class_based_stats()
-            
-            result['created'] = True
-            dialog.destroy()
-        
-        def cancel():
-            dialog.destroy()
-        
-        ttk.Button(button_frame, text="Create Character", command=create_character, width=20).pack(side="left", padx=5)
-        ttk.Button(button_frame, text="Cancel", command=cancel, width=20).pack(side="left", padx=5)
-        
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-        
-        # Bind mouse wheel
-        self.bind_mousewheel(canvas)
-        
-        # Focus on name entry
-        name_entry.focus()
-        
-        # Wait for dialog to close
-        dialog.wait_window()
-        
-        return result['created']
-    
-    def save_character(self):
-        """Save character to current file or prompt for location"""
-        if self.current_file:
-            self.save_to_file(self.current_file)
-        else:
-            self.save_character_as()
-    
-    def save_character_as(self):
-        """Save character to a new file"""
-        filename = filedialog.asksaveasfilename(
-            defaultextension=".json",
-            filetypes=[("Character Files", "*.json"), ("All Files", "*.*")],
-            title="Save Character As"
-        )
-        
-        if filename:
-            self.save_to_file(filename)
-    
-    def save_to_file(self, filename):
-        """Save character data to JSON file"""
-        try:
-            # Update character from GUI fields
-            self.update_character_from_gui()
-            
-            # Save to file
-            with open(filename, 'w') as f:
-                json.dump(self.character.to_dict(), f, indent=2)
-            
-            self.current_file = filename
-            self.is_modified = False
-            self.update_title()
-            messagebox.showinfo("Success", f"Character saved to {os.path.basename(filename)}")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to save character: {str(e)}")
+        if result['created']:
+            self.character = result['character']
+            return True
+        return False
     
     def load_character(self):
         """Load character from file"""
@@ -436,13 +252,11 @@ class CharacterSheetGUI:
             elif response is None:  # Cancel
                 return
         
-        filename = filedialog.askopenfilename(
+        if filename := filedialog.askopenfilename(
             defaultextension=".json",
             filetypes=[("Character Files", "*.json"), ("All Files", "*.*")],
             title="Load Character"
-        )
-        
-        if filename:
+        ):
             self.load_from_file(filename)
     
     def load_from_file(self, filename):
@@ -485,6 +299,42 @@ class CharacterSheetGUI:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load character: {str(e)}")
     
+    # --- Save Character ---
+    def save_character(self):
+        """Save character to current file or prompt for new file"""
+        if self.current_file:
+            self.save_to_file(self.current_file)
+        else:
+            self.save_character_as()
+    
+    def save_character_as(self):
+        """Save character to a new file"""
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("Character Files", "*.json"), ("All Files", "*.*")],
+            title="Save Character"
+        )
+        if filename:
+            self.save_to_file(filename)
+    
+    def save_to_file(self, filename):
+        """Save character data to JSON file"""
+        try:
+            # Update character from GUI fields
+            self.update_character_from_gui()
+            
+            # Save to file
+            with open(filename, 'w') as f:
+                json.dump(self.character.to_dict(), f, indent=2)
+            
+            self.current_file = filename
+            self.is_modified = False
+            self.update_title()
+            messagebox.showinfo("Success", f"Character saved to {os.path.basename(filename)}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save character: {str(e)}")
+    
+    # --- Update from GUI ---
     def update_character_from_gui(self):
         """Update character object from all GUI fields"""
         # Basic info
@@ -531,6 +381,7 @@ class CharacterSheetGUI:
         
         # Skills and other fields are already updated through their handlers
     
+    # --- Populate GUI from Character ---
     def populate_fields_from_character(self):
         """Populate all GUI fields from character object"""
         # Basic info
@@ -538,7 +389,11 @@ class CharacterSheetGUI:
         self.set_entry('player', self.character.player)
         if hasattr(self, 'class_var'):
             self.class_var.set(self.character.character_class)
-        self.set_entry('level', str(self.character.level))
+        # For multiclass, use get_total_level if available
+        if hasattr(self.character, 'get_total_level') and callable(self.character.get_total_level):
+            self.set_entry('level', str(self.character.get_total_level()))
+        else:
+            self.set_entry('level', str(self.character.level))
         self.set_entry('race', self.character.race)
         self.set_entry('alignment', self.character.alignment)
         
@@ -597,9 +452,13 @@ class CharacterSheetGUI:
         
         # Skills
         for skill_name, ranks in self.character.skills.items():
-            self.set_entry(f'skill_ranks_{skill_name}', str(ranks))
-            misc = self.character.skill_misc.get(skill_name, 0)
-            self.set_entry(f'skill_misc_{skill_name}', str(misc))
+            skill_ranks_key = f'skill_ranks_{skill_name}'
+            skill_misc_key = f'skill_misc_{skill_name}'
+            if skill_ranks_key in self.entries:
+                self.set_entry(skill_ranks_key, str(ranks))
+            if skill_misc_key in self.entries:
+                misc = self.character.skill_misc.get(skill_name, 0)
+                self.set_entry(skill_misc_key, str(misc))
         
         # Update skill points displays
         if 'skill_points_available' in self.labels:
@@ -609,8 +468,14 @@ class CharacterSheetGUI:
             self.labels['skill_points_spent'].config(text=str(total_spent))
         
         # Spellcasting (delegate to spells tab if available)
-        if hasattr(self, 'spells_tab') and hasattr(self.spells_tab, 'update'):
-            self.spells_tab.update()
+        if hasattr(self, 'spells_tab'):
+            if hasattr(self.spells_tab, 'update') and callable(self.spells_tab.update):
+                self.spells_tab.update()
+            else:
+                raise NotImplementedError(
+                    "spells_tab must implement an 'update' method. "
+                    "Please ensure the spells_tab object provides an 'update()' method for proper integration."
+                )
         
         # Feats and Abilities
         if hasattr(self, 'feats_tab'):
@@ -631,6 +496,7 @@ class CharacterSheetGUI:
         # Update saving throw display to show magic item bonuses
         self.update_saves_display()
     
+    # --- Entry Helpers ---
     def set_entry(self, key, value):
         """Set the value of an entry widget"""
         if key in self.entries:
@@ -657,6 +523,7 @@ class CharacterSheetGUI:
         
         return entry
     
+    # --- Mousewheel Binding ---
     def bind_mousewheel(self, canvas):
         """Bind mouse wheel scrolling to a canvas"""
         def on_mousewheel(event):
@@ -695,24 +562,20 @@ class CharacterSheetGUI:
     
     # build_main_tab() removed - now using modular MainTab
     
+    # --- Utility: Entry Integer ---
     def get_entry_int(self, key, default=0):
-        """Get integer value from entry widget"""
+        """Get integer value from entry widget. Logs errors for debugging."""
         try:
             value = self.entries[key].get()
             return int(value) if value else default
-        except (ValueError, KeyError):
+        except KeyError:
+            print(f"[get_entry_int] KeyError: '{key}' not found in entries.")
+            return default
+        except ValueError:
+            print(f"[get_entry_int] ValueError: '{key}' value '{self.entries[key].get()}' is not an int.")
             return default
     
-    # All build_tab methods removed - now using modular tabs
-    
-    def get_entry_int(self, key, default=0):
-        """Get integer value from entry widget"""
-        try:
-            value = self.entries[key].get()
-            return int(value) if value else default
-        except (ValueError, KeyError):
-            return default
-    
+    # --- Ability Score Update ---
     def update_ability_score(self, ability):
         """Update ability score and all dependent fields"""
         # Delegate to main_tab if it exists
@@ -720,18 +583,23 @@ class CharacterSheetGUI:
             self.main_tab.update_ability_score(ability)
         self.update_all_calculated_fields()
     
+    # --- Update from Entry ---
     def update_from_entry(self, field_name):
-        """Update a character field from entry widget"""
+        """Update a character field from entry widget, with dynamic whitelist validation."""
+        # Dynamically generate allowed fields from character attributes
+        allowed_fields = set(vars(self.character).keys())
+        if field_name not in allowed_fields:
+            print(f"[update_from_entry] Attempt to set disallowed field: {field_name}")
+            return
         value = self.entries[field_name].get()
         try:
-            # Try to convert to int
             value = int(value)
         except ValueError:
             pass  # Keep as string
-        
         setattr(self.character, field_name, value)
         self.update_all_calculated_fields()
     
+    # --- Calculated Field Updates ---
     def update_all_calculated_fields(self):
         """Update all calculated/derived fields"""
         # Update ability modifiers
@@ -833,6 +701,7 @@ class CharacterSheetGUI:
         if hasattr(self, 'main_tab') and hasattr(self.main_tab, 'refresh_weapons'):
             self.main_tab.refresh_weapons()
     
+    # --- AC Display Update ---
     def update_ac_display(self):
         """Update all AC-related displays"""
         # Only update if labels exist (they may not be created yet during init)
@@ -861,6 +730,7 @@ class CharacterSheetGUI:
         if hasattr(self, 'main_tab') and hasattr(self.main_tab, 'update_ac_components'):
             self.main_tab.update_ac_components(magic_armor, magic_shield, magic_natural, magic_deflection)
     
+    # --- Saving Throw Display Update ---
     def update_saves_display(self):
         """Update all saving throw displays including magic bonuses"""
         # Only update if labels exist
@@ -887,122 +757,35 @@ class CharacterSheetGUI:
 
 def show_startup_dialog():
     """Show startup dialog to choose between new character or load existing"""
-    # Create a temporary root window for the dialog
-    temp_root = tk.Tk()
-    temp_root.withdraw()
-    
-    dialog = tk.Toplevel(temp_root)
-    dialog.title("D&D 3e Character Sheet")
-    dialog.geometry("400x200")
-    
-    # Center the dialog
-    dialog.update_idletasks()
-    x = (dialog.winfo_screenwidth() // 2) - (dialog.winfo_width() // 2)
-    y = (dialog.winfo_screenheight() // 2) - (dialog.winfo_height() // 2)
-    dialog.geometry(f"+{x}+{y}")
-    
-    # Variable to store user choice
-    choice = {'action': None, 'file': None}
-    
-    # Title
-    ttk.Label(
-        dialog,
-        text="D&D 3rd Edition Character Sheet",
-        font=('TkDefaultFont', 16, 'bold')
-    ).pack(pady=20)
-    
-    ttk.Label(
-        dialog,
-        text="What would you like to do?",
-        font=('TkDefaultFont', 12)
-    ).pack(pady=10)
-    
-    # Button frame
-    button_frame = ttk.Frame(dialog)
-    button_frame.pack(pady=20)
-    
-    def new_character():
-        choice['action'] = 'new'
-        dialog.destroy()
-        temp_root.quit()
-    
-    def load_character():
-        filename = filedialog.askopenfilename(
-            defaultextension=".json",
-            filetypes=[("Character Files", "*.json"), ("All Files", "*.*")],
-            title="Load Character"
-        )
-        if filename:
-            choice['action'] = 'load'
-            choice['file'] = filename
-            dialog.destroy()
-            temp_root.quit()
-    
-    def on_close():
-        choice['action'] = None
-        dialog.destroy()
-        temp_root.quit()
-    
-    dialog.protocol("WM_DELETE_WINDOW", on_close)
-    
-    # New Character button
-    ttk.Button(
-        button_frame,
-        text="Create New Character",
-        command=new_character,
-        width=25
-    ).pack(side='left', padx=10)
-    
-    # Load Character button
-    ttk.Button(
-        button_frame,
-        text="Load Existing Character",
-        command=load_character,
-        width=25
-    ).pack(side='left', padx=10)
-    
-    # Run the dialog
-    temp_root.mainloop()
-    
-    # Store choice before destroying
-    result = choice.copy()
-    
-    # Properly destroy everything
-    try:
-        dialog.destroy()
-    except:
-        pass
-    temp_root.destroy()
-    
-    return result
+    dialog = StartupDialog()
+    return dialog.show()
   
 
 def main():
-    """Main entry point"""
-    # Show startup dialog
+    """
+    Main entry point for the D&D 3e Character Sheet GUI.
+    Shows startup dialog, then launches main app window.
+    """
+    # Show startup dialog (choose new or load character)
     choice = show_startup_dialog()
-    
-    # If user closed dialog without choosing, exit
     if choice['action'] is None:
-        return
-    
-    # Small delay to ensure cleanup
+        return  # User cancelled
+
+    # Ensure dialog cleanup before main window
     import time
     time.sleep(0.1)
-    
-    # Create main window
+
+    # Create main window and app
     root = tk.Tk()
-    
-    # Create the application
     app = CharacterSheetGUI(root)
-    
-    # Load character if requested
-    if choice['action'] == 'load' and choice['file']:
+
+    # Handle user choice
+    if choice['action'] == 'new':
+        app.new_character()  # Open character creation dialog immediately
+    elif choice['action'] == 'load' and choice['file']:
         app.load_from_file(choice['file'])
-    
-    # Ensure main window has focus
+
     root.focus_force()
-    
     root.mainloop()
 
 
