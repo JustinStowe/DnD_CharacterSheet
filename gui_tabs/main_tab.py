@@ -937,6 +937,11 @@ class MainTab(BaseTab):
                             break
                     self.character.update_class_based_stats()
                     update_total_label()
+                    self.update_class_display()
+                    self.gui.update_all_calculated_fields()
+                    if hasattr(self.gui, 'spells_tab'):
+                        self.gui.spells_tab.update()
+                    self.mark_modified()
 
                 level_spinbox.config(command=update_level)
 
@@ -960,6 +965,10 @@ class MainTab(BaseTab):
             self.character.remove_class(class_name)
             self.character.update_class_based_stats()
             refresh_classes_display()
+            self.update_class_display()
+            self.gui.update_all_calculated_fields()
+            if hasattr(self.gui, 'spells_tab'):
+                self.gui.spells_tab.update()
             self.mark_modified()
 
         def add_new_class():
@@ -1109,6 +1118,10 @@ class MainTab(BaseTab):
                 self.character.add_class(selected_class, 1)
                 self.character.update_class_based_stats()
                 refresh_classes_display()
+                self.update_class_display()
+                self.gui.update_all_calculated_fields()
+                if hasattr(self.gui, 'spells_tab'):
+                    self.gui.spells_tab.update()
                 self.mark_modified()
                 add_dialog.destroy()
 
@@ -1151,6 +1164,15 @@ class MainTab(BaseTab):
         button_frame = ttk.Frame(dialog)
         button_frame.pack(fill='x', padx=10, pady=10)
 
+        def close_dialog():
+            """Close dialog and update all displays"""
+            self.update_class_display()
+            self.gui.update_all_calculated_fields()
+            # Update spells tab to recalculate spell slots
+            if hasattr(self.gui, 'spells_tab'):
+                self.gui.spells_tab.update()
+            dialog.destroy()
+
         ttk.Button(
             button_frame,
             text="Add Class",
@@ -1160,7 +1182,7 @@ class MainTab(BaseTab):
         ttk.Button(
             button_frame,
             text="Close",
-            command=dialog.destroy).pack(
+            command=close_dialog).pack(
             side='right',
             padx=5)
 
