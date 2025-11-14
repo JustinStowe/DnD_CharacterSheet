@@ -625,20 +625,59 @@ class Character:
         """Get Charisma modifier"""
         return self.get_ability_modifier(self.charisma + self.cha_temp_mod)
     
+    def has_feat(self, feat_name):
+        """Check if character has a specific feat (case-insensitive)"""
+        feat_name_lower = feat_name.lower()
+        return any(f['name'].lower() == feat_name_lower for f in self.feats)
+    
+    def has_class(self, class_name):
+        """Check if character has levels in a specific class"""
+        return self.get_class_level(class_name) > 0
+    
+    def has_special_ability(self, ability_name):
+        """Check if character has a specific special ability (case-insensitive)"""
+        ability_name_lower = ability_name.lower()
+        return any(a['name'].lower() == ability_name_lower for a in self.special_abilities)
+    
     def get_fortitude_save(self):
         """Calculate total Fortitude save"""
         magic_resistance = self.get_equipment_bonus('Resistance (All Saves)')
-        return self.fort_base + self.get_con_modifier() + self.fort_misc + magic_resistance
+        base_save = self.fort_base + self.get_con_modifier() + self.fort_misc + magic_resistance
+        
+        # Divine Grace: Paladin adds Cha modifier to all saves
+        if self.has_class('Paladin') and self.get_class_level('Paladin') >= 2:
+            base_save += max(0, self.get_cha_modifier())  # Divine Grace only adds if positive
+        
+        return base_save
     
     def get_reflex_save(self):
         """Calculate total Reflex save"""
         magic_resistance = self.get_equipment_bonus('Resistance (All Saves)')
-        return self.ref_base + self.get_dex_modifier() + self.ref_misc + magic_resistance
+        base_save = self.ref_base + self.get_dex_modifier() + self.ref_misc + magic_resistance
+        
+        # Divine Grace: Paladin adds Cha modifier to all saves
+        if self.has_class('Paladin') and self.get_class_level('Paladin') >= 2:
+            base_save += max(0, self.get_cha_modifier())  # Divine Grace only adds if positive
+        
+        return base_save
     
     def get_will_save(self):
         """Calculate total Will save"""
         magic_resistance = self.get_equipment_bonus('Resistance (All Saves)')
-        return self.will_base + self.get_wis_modifier() + self.will_misc + magic_resistance
+        
+        # Force of Personality: Use Cha modifier instead of Wis for Will saves
+        if self.has_feat('Force of Personality'):
+            ability_mod = self.get_cha_modifier()
+        else:
+            ability_mod = self.get_wis_modifier()
+        
+        base_save = self.will_base + ability_mod + self.will_misc + magic_resistance
+        
+        # Divine Grace: Paladin adds Cha modifier to all saves
+        if self.has_class('Paladin') and self.get_class_level('Paladin') >= 2:
+            base_save += max(0, self.get_cha_modifier())  # Divine Grace only adds if positive
+        
+        return base_save
     
     def get_ac(self):
         """Calculate total Armor Class"""
@@ -1229,6 +1268,11 @@ class Character:
             
             # Inventory
             'inventory': self.inventory.copy(),
+            
+            # Currency
+            'currency': self.currency.copy() if hasattr(self, 'currency') else {
+                'platinum': 0, 'gold': 0, 'silver': 0, 'copper': 0
+            },
             
             # Spellcasting
             'spellcasting_ability': self.spellcasting_ability,
