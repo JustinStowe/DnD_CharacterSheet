@@ -239,12 +239,6 @@ class SpellsTab(BaseTab):
         buttons_frame = ttk.Frame(slots_frame)
         buttons_frame.grid(row=11, column=0, columnspan=5, pady=10)
 
-        # Calculate spell slots button
-        calc_btn = ttk.Button(buttons_frame,
-                              text="Calculate Spell Slots (from Class/Level)",
-                              command=self.calculate_spell_slots_from_class)
-        calc_btn.pack(side='left', padx=5)
-
         # Rest button
         rest_btn = ttk.Button(
             buttons_frame,
@@ -486,6 +480,9 @@ class SpellsTab(BaseTab):
 
     def update(self):
         """Update spell tab display when character data changes"""
+        # Automatically recalculate spell slots from class/level/abilities
+        self.calculate_spell_slots_from_class(show_message=False)
+        
         # Update spell slots display
         for level in range(10):
             self.set_entry(f'spell_max_{level}', str(self.character.spell_slots_max.get(level, 0)))
@@ -521,7 +518,7 @@ class SpellsTab(BaseTab):
 
         self.mark_modified()
 
-    def calculate_spell_slots_from_class(self):
+    def calculate_spell_slots_from_class(self, show_message=False):
         """Calculate and set spell slots based on class, level, and ability scores"""
         # Update character's ability scores from GUI first
         self.character.strength = self.get_entry_int('strength', 10)
@@ -541,25 +538,26 @@ class SpellsTab(BaseTab):
             self.entries[f'spell_max_{level}'].insert(0, str(max_slots))
             self.update_spell_slots(level)
 
-        # Show info message
-        class_info = self.character.get_class_info()
-        if class_info['spellcasting_ability']:
-            base_1st = self.character.get_base_spells_per_day(1)
-            bonus_1st = self.character.get_bonus_spells(1)
-            total_1st = base_1st + bonus_1st if base_1st > 0 else 0
+        # Show info message only if requested
+        if show_message:
+            class_info = self.character.get_class_info()
+            if class_info['spellcasting_ability']:
+                base_1st = self.character.get_base_spells_per_day(1)
+                bonus_1st = self.character.get_bonus_spells(1)
+                total_1st = base_1st + bonus_1st if base_1st > 0 else 0
 
-            ability_name = self.character.spellcasting_ability.capitalize()
-            ability_mod = self.character.get_spellcasting_modifier()
+                ability_name = self.character.spellcasting_ability.capitalize()
+                ability_mod = self.character.get_spellcasting_modifier()
 
-            messagebox.showinfo("Spell Slots Calculated",
-                                f"Spell slots updated for {self.character.character_class} level {self.character.level}.\n\n"
-                                f"Spellcasting Ability: {ability_name} ({ability_mod:+d})\n"
-                                f"Example (1st level): {base_1st} base + {bonus_1st} bonus = {total_1st} total\n\n"
-                                f"Bonus spells are granted based on your {ability_name} modifier.")
-        else:
-            messagebox.showinfo(
-                "No Spellcasting", f"{
-                    self.character.character_class} does not have spellcasting abilities.")
+                messagebox.showinfo("Spell Slots Calculated",
+                                    f"Spell slots updated for {self.character.character_class} level {self.character.level}.\n\n"
+                                    f"Spellcasting Ability: {ability_name} ({ability_mod:+d})\n"
+                                    f"Example (1st level): {base_1st} base + {bonus_1st} bonus = {total_1st} total\n\n"
+                                    f"Bonus spells are granted based on your {ability_name} modifier.")
+            else:
+                messagebox.showinfo(
+                    "No Spellcasting", f"{
+                        self.character.character_class} does not have spellcasting abilities.")
 
         self.mark_modified()
 
