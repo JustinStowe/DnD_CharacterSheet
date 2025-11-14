@@ -79,7 +79,7 @@ COMPLETE_DIVINE_PRESTIGE_CLASSES = {
         'is_prestige': True,
         'requirements': {
             'skills': {'Knowledge (any three)': 8, 'Spellcraft': 8},
-            'feats': ['Any two},
+            'feats': ['Any two metamagic feats'],
             'spellcasting': 'Ability to cast 4th-level divine spells',
             'special': 'Cleric level 6th minimum'
         },
@@ -118,7 +118,7 @@ COMPLETE_DIVINE_PRESTIGE_CLASSES = {
         'is_prestige': True,
         'requirements': {
             'skills': {'Knowledge (religion)': 12, 'Spellcraft': 12},
-            'feats': ['Any two},
+            'feats': ['Any two metamagic feats'],
             'spellcasting': 'Ability to cast 7th-level divine spells',
             'special': 'Knowledge (religion) check DC 40'
         },
