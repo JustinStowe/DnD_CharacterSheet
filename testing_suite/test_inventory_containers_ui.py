@@ -51,7 +51,53 @@ def test_edit_container_manage_contents(dummy_gui):
     # Instead, manually modify contents using the character model and then re-open display
     gui.character.inventory[0]['contents'].append({'name': 'Gem', 'weight': 10, 'quantity': 1, 'notes': ''})
     it.update_inventory_display()
-    # Ensure inside weight shows 10.0
+    # Ensure inside weight/capacity shows '10.0/30.0'
     row = it.inventory_tree.get_children()[0]
     values = it.inventory_tree.item(row)['values']
-    assert values[4] == '10.0'  # inside_weight column
+    assert values[4] == '10.0/30.0'  # inside/capacity column
+
+
+def test_capacity_validation_prevents_add(dummy_gui):
+    from character import Character
+    gui = dummy_gui
+    gui.character = Character()
+    frame = tk.Frame(gui.root)
+    it = InventoryTab(frame, gui)
+    it.build()
+
+    gui.character.add_item('Small Bag', 1, 1, 'Container', is_container=True, capacity_lbs=10, count_contents_toward_carry=True, contents=[])
+    it.update_inventory_display()
+    container = gui.character.inventory[-1]
+
+    # Try to add a heavy item exceeding capacity
+    ok = it.add_content_to_container(container, {'name': 'Rock', 'weight': 12, 'quantity': 1, 'notes': ''})
+    assert not ok
+    assert len(container['contents']) == 0
+
+    # Add smaller item then try to add item exceeding remaining capacity
+    ok = it.add_content_to_container(container, {'name': 'Apple', 'weight': 1, 'quantity': 1, 'notes': ''})
+    assert ok
+    ok = it.add_content_to_container(container, {'name': 'Anvil', 'weight': 10, 'quantity': 1, 'notes': ''})
+    assert not ok
+
+
+def test_edit_content_via_helper_updates_ui(dummy_gui):
+    from character import Character
+    gui = dummy_gui
+    gui.character = Character()
+    frame = tk.Frame(gui.root)
+    it = InventoryTab(frame, gui)
+    it.build()
+
+    gui.character.add_item('Medium Bag', 1, 1, 'Container', is_container=True, capacity_lbs=20, count_contents_toward_carry=True, contents=[{'name':'Stone','weight':5,'quantity':1,'notes':''}])
+    it.update_inventory_display()
+
+    container = gui.character.inventory[-1]
+    # edit content weight from 5 to 10
+    ok = it.edit_content_in_container(container, 0, {'name':'Stone','weight':10,'quantity':1,'notes':''})
+    assert ok
+    it.update_inventory_display()
+    row = it.inventory_tree.get_children()[0]
+    values = it.inventory_tree.item(row)['values']
+    # inside/capacity should be 10.0/20.0
+    assert values[4] == '10.0/20.0'

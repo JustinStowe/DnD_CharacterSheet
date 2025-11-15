@@ -13,6 +13,44 @@ class InventoryTab(BaseTab):
     def __init__(self, parent, gui):
         super().__init__(parent, gui)
         self.inventory_tree = None
+        # Helper methods: not strictly required for UI but useful for programmatic tests
+        
+    def add_content_to_container(self, container_item, content_item):
+        """Add a content item to a container, validating capacity. Returns True if added, False otherwise."""
+        if not container_item.get('is_container'):
+            return False
+        cap = container_item.get('capacity_lbs', 0) or 0
+        if cap > 0:
+            current = sum([c.get('weight', 0) * c.get('quantity', 1) for c in container_item.get('contents', [])])
+            new_total = current + (content_item.get('weight', 0) * content_item.get('quantity', 1))
+            if new_total > cap:
+                return False
+        container_item.setdefault('contents', []).append(content_item.copy())
+        return True
+
+    def edit_content_in_container(self, container_item, index, new_content):
+        """Edit content in container at index; validate capacity. Returns True on success."""
+        if not container_item.get('is_container'):
+            return False
+        contents = container_item.get('contents', [])
+        if not (0 <= index < len(contents)):
+            return False
+        cap = container_item.get('capacity_lbs', 0) or 0
+        if cap > 0:
+            existing = sum([c.get('weight', 0) * c.get('quantity', 1) for i, c in enumerate(contents) if i != index])
+            new_total = existing + (new_content.get('weight', 0) * new_content.get('quantity', 1))
+            if new_total > cap:
+                return False
+        contents[index] = new_content.copy()
+        return True
+
+    def remove_content_from_container(self, container_item, index):
+        """Remove content at index from container. Returns True if removed."""
+        contents = container_item.get('contents', [])
+        if not (0 <= index < len(contents)):
+            return False
+        contents.pop(index)
+        return True
 
     def build(self):
         """Build the inventory tab"""
@@ -351,7 +389,7 @@ class InventoryTab(BaseTab):
         scrollbar.pack(side='right', fill='y')
 
         # Create treeview for inventory
-        columns = ('name', 'weight', 'quantity', 'total_weight', 'inside_weight', 'capacity', 'counted', 'notes')
+        columns = ('name', 'weight', 'quantity', 'total_weight', 'inside_cap', 'counted', 'notes')
         self.inventory_tree = ttk.Treeview(
             list_frame,
             columns=columns,
@@ -362,8 +400,7 @@ class InventoryTab(BaseTab):
         self.inventory_tree.heading('weight', text='Weight (ea)')
         self.inventory_tree.heading('quantity', text='Qty')
         self.inventory_tree.heading('total_weight', text='Total Weight')
-        self.inventory_tree.heading('inside_weight', text='Inside Weight')
-        self.inventory_tree.heading('capacity', text='Capacity')
+        self.inventory_tree.heading('inside_cap', text='Inside/Capacity')
         self.inventory_tree.heading('counted', text='Counted?')
         self.inventory_tree.heading('notes', text='Notes')
 
@@ -371,8 +408,7 @@ class InventoryTab(BaseTab):
         self.inventory_tree.column('weight', width=80)
         self.inventory_tree.column('quantity', width=60)
         self.inventory_tree.column('total_weight', width=100)
-        self.inventory_tree.column('inside_weight', width=120)
-        self.inventory_tree.column('capacity', width=120)
+        self.inventory_tree.column('inside_cap', width=120)
         self.inventory_tree.column('counted', width=60)
         self.inventory_tree.column('notes', width=250)
 
@@ -479,7 +515,11 @@ class InventoryTab(BaseTab):
         dialog.title("Edit Item")
         dialog.geometry("450x250")
         dialog.transient(self.root)
-        dialog.grab_set()
+        try:
+            dialog.grab_set()
+        except Exception:
+            # In unit tests or headless environments, fall back to a non-modal dialog
+            dialog = tk.Toplevel(self.root)
         
         # Create form
         form_frame = ttk.Frame(dialog, padding=20)
@@ -568,7 +608,11 @@ class InventoryTab(BaseTab):
                     q = 1
                 nt = notes_c.get().strip()
                 item = {'name': nm, 'weight': wt, 'quantity': q, 'notes': nt}
-                contents.append(item)
+                ok = self.add_content_to_container(current_item, item)
+                if not ok:
+                    messagebox.showwarning('Capacity Exceeded', 'Cannot add item: exceeds container capacity.', parent=dlg)
+                    return
+                # Refresh tree
                 content_tree.insert('', 'end', values=(nm, f"{wt:.1f}", q, nt))
                 name_c.delete(0, tk.END)
                 weight_c.delete(0, tk.END)
@@ -582,11 +626,69 @@ class InventoryTab(BaseTab):
                     return
                 idx = content_tree.index(sel[0])
                 content_tree.delete(sel[0])
-                if 0 <= idx < len(contents):
-                    contents.pop(idx)
+                self.remove_content_from_container(current_item, idx)
+
+            def edit_content_item(_evt=None):
+                sel = content_tree.selection()
+                if not sel:
+                    return
+                idx = content_tree.index(sel[0])
+                c = contents[idx]
+                # open small edit dialog
+                ed = tk.Toplevel(dlg)
+                ed.transient(dlg)
+                ed.grab_set()
+                ef = ttk.Frame(ed, padding=10)
+                ef.pack(fill='both', expand=True)
+                ttk.Label(ef, text='Name:').grid(row=0, column=0)
+                ne = ttk.Entry(ef, width=30)
+                ne.grid(row=0, column=1)
+                ne.insert(0, c.get('name', ''))
+                ttk.Label(ef, text='Weight:').grid(row=1, column=0)
+                we = ttk.Entry(ef, width=12)
+                we.grid(row=1, column=1)
+                we.insert(0, str(c.get('weight', 0)))
+                ttk.Label(ef, text='Qty:').grid(row=2, column=0)
+                qe = ttk.Entry(ef, width=8)
+                qe.grid(row=2, column=1)
+                qe.insert(0, str(c.get('quantity', 1)))
+                ttk.Label(ef, text='Notes:').grid(row=3, column=0)
+                notee = ttk.Entry(ef, width=30)
+                notee.grid(row=3, column=1)
+                notee.insert(0, c.get('notes', ''))
+
+                def save_edit():
+                    try:
+                        nn = ne.get().strip()
+                        nw = float(we.get().strip() or 0)
+                        nq = int(qe.get().strip() or 1)
+                    except Exception:
+                        messagebox.showerror('Invalid Input', 'Please provide valid numbers for weight and quantity.', parent=ed)
+                        return
+                    # Validate capacity
+                    cap = current_item.get('capacity_lbs', 0) or 0
+                    if cap > 0:
+                        existing = sum([c0.get('weight',0)*c0.get('quantity',1) for i0,c0 in enumerate(contents) if i0 != idx])
+                        if existing + (nw * nq) > cap:
+                            messagebox.showwarning('Capacity Exceeded', 'Cannot set description: exceeds container capacity.', parent=ed)
+                            return
+                    new = {'name': nn, 'weight': nw, 'quantity': nq, 'notes': notee.get().strip()}
+                    ok = self.edit_content_in_container(current_item, idx, new)
+                    if not ok:
+                        messagebox.showwarning('Capacity Exceeded', 'Cannot set values: exceeds container capacity.', parent=ed)
+                        return
+                    # update tree entry
+                    content_tree.item(sel[0], values=(new.get('name',''), f"{new.get('weight',0):.1f}", new.get('quantity',1), new.get('notes','')))
+                    ed.destroy()
+
+                ttk.Button(ef, text='Save', command=save_edit).grid(row=4, column=0)
+                ttk.Button(ef, text='Cancel', command=ed.destroy).grid(row=4, column=1)
+                self.root.wait_window(ed)
 
             ttk.Button(addf, text='Add', command=add_content_item).grid(row=0, column=4, padx=2)
             ttk.Button(addf, text='Remove', command=remove_content_item).grid(row=0, column=5, padx=2)
+            # Bind double-click to edit
+            content_tree.bind('<Double-1>', edit_content_item)
 
             def close_dlg():
                 dlg.destroy()
@@ -694,9 +796,10 @@ class InventoryTab(BaseTab):
                 counted = 'Yes' if item.get('count_contents_toward_carry', True) else 'No'
             notes = item.get('notes', '')
 
+            inside_cap_display = f"{inside_weight}/{capacity}" if inside_weight or capacity else ''
             self.inventory_tree.insert(
                 '', 'end', values=(
-                    name, f"{weight:.1f}", quantity, f"{total_weight:.1f}", inside_weight, capacity, counted, notes))
+                    name, f"{weight:.1f}", quantity, f"{total_weight:.1f}", inside_cap_display, counted, notes))
 
         # Update carrying capacity
         capacity = self.character.get_carrying_capacity()
