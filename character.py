@@ -23,6 +23,7 @@ from Epic_levels.epic_levels import (
 from character_parts.equipment import EquipmentManager
 from character_parts.abilities import AbilityManager
 from character_parts.saves import SaveManager
+from character_parts.ac import ACManager
 
 # D&D 3e Class definitions
 CLASS_DEFINITIONS = {
@@ -576,6 +577,8 @@ class Character:
         self.ability_manager = AbilityManager(self)
         # Save manager
         self.save_manager = SaveManager(self)
+        # AC manager
+        self.ac_manager = ACManager(self)
     
     def get_equipment_bonus(self, bonus_type):
         """Compatibility wrapper: delegate to equipment manager."""
@@ -641,42 +644,17 @@ class Character:
     
     def get_ac(self):
         """Calculate total Armor Class"""
-        # Get bonuses from magic items
-        magic_armor = self.get_equipment_bonus('Armor')
-        magic_shield = self.get_equipment_bonus('Shield')
-        magic_natural = self.get_equipment_bonus('Natural Armor')
-        magic_deflection = self.get_equipment_bonus('Deflection')
-        
-        return (10 + self.armor_bonus + magic_armor + 
-                self.shield_bonus + magic_shield + 
-                self.get_dex_modifier() + 
-                self.natural_armor + magic_natural + 
-                self.deflection_bonus + magic_deflection + 
-                self.misc_ac_bonus)
+        return self.ac_manager.get_ac()
     
     def get_touch_ac(self):
-        """Calculate Touch AC (no armor/shield/natural)"""
-        magic_deflection = self.get_equipment_bonus('Deflection')
-        return (10 + self.get_dex_modifier() + 
-                self.deflection_bonus + magic_deflection + 
-                self.misc_ac_bonus)
+        return self.ac_manager.get_touch_ac()
     
     def get_flat_footed_ac(self):
-        """Calculate Flat-footed AC (no dex bonus)"""
-        magic_armor = self.get_equipment_bonus('Armor')
-        magic_shield = self.get_equipment_bonus('Shield')
-        magic_natural = self.get_equipment_bonus('Natural Armor')
-        magic_deflection = self.get_equipment_bonus('Deflection')
-        
-        return (10 + self.armor_bonus + magic_armor + 
-                self.shield_bonus + magic_shield + 
-                self.natural_armor + magic_natural + 
-                self.deflection_bonus + magic_deflection + 
-                self.misc_ac_bonus)
+        return self.ac_manager.get_flat_footed_ac()
     
     def get_initiative(self):
         """Calculate initiative"""
-        return self.get_dex_modifier() + self.initiative_misc
+        return self.ac_manager.get_initiative()
     
     def get_skill_total(self, skill_name):
         """Calculate total skill bonus"""
