@@ -578,7 +578,7 @@ def test_magic_item_dialog_abilities_saved(monkeypatch, dummy_gui):
                     'max_charges': 10,
                     'properties': '',
                     'description': '',
-                    'abilities': [{'name': 'Cure', 'cost': 1}, {'name': 'Greater Cure', 'cost': 3}],
+                    'abilities': [{'name': 'Cure', 'cost': 1, 'description': 'Minor heal'}, {'name': 'Greater Cure', 'cost': 3, 'description': 'Larger heal'}],
                     'equipped': False
                 }
                 on_save(mi, item_index)
@@ -596,4 +596,6 @@ def test_magic_item_dialog_abilities_saved(monkeypatch, dummy_gui):
     assert dummy_gui.character.magic_items[0]['name'] == 'Test Staff'
     assert 'abilities' in dummy_gui.character.magic_items[0]
     assert len(dummy_gui.character.magic_items[0]['abilities']) == 2
+    assert dummy_gui.character.magic_items[0]['abilities'][0]['description'] == 'Minor heal'
+    assert dummy_gui.character.magic_items[0]['abilities'][1]['description'] == 'Larger heal'
 

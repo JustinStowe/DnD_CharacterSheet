@@ -162,17 +162,26 @@ class MagicItemDialog:
         self.ability_cost_var = tk.IntVar(value=1)
         ttk.Spinbox(add_ability_frame, from_=1, to=10, textvariable=self.ability_cost_var, width=5).pack(side='left', padx=2)
 
+        # Description area for the ability (allows per-ability descriptions)
+        ability_desc_frame = ttk.Frame(abilities_frame)
+        ability_desc_frame.pack(fill='x', pady=5)
+        ttk.Label(ability_desc_frame, text='Description:').pack(side='left', padx=2)
+        self.ability_desc_text = tk.Text(ability_desc_frame, height=3, width=50, wrap='word')
+        self.ability_desc_text.pack(side='left', padx=2)
+
         def add_ability():
             name = self.ability_name_var.get().strip()
             cost = int(self.ability_cost_var.get())
+            desc = self.ability_desc_text.get('1.0', 'end-1c').strip()
             if not name:
                 messagebox.showwarning('Missing Name', 'Please enter an ability name.', parent=self.dialog)
                 return
-            a = {'name': name, 'cost': cost, 'description': ''}
+            a = {'name': name, 'cost': cost, 'description': desc}
             self.ability_list.append(a)
             self.ability_tree.insert('', 'end', values=(a['name'], a['cost']))
             self.ability_name_var.set('')
             self.ability_cost_var.set(1)
+            self.ability_desc_text.delete('1.0', 'end')
 
         def remove_ability():
             selection = self.ability_tree.selection()
@@ -181,8 +190,33 @@ class MagicItemDialog:
                 del self.ability_list[index]
                 self.ability_tree.delete(selection[0])
 
+        def on_select_ability(_evt=None):
+            sel = self.ability_tree.selection()
+            if not sel:
+                return
+            idx = self.ability_tree.index(sel[0])
+            a = self.ability_list[idx]
+            self.ability_name_var.set(a.get('name', ''))
+            self.ability_cost_var.set(a.get('cost', 1))
+            self.ability_desc_text.delete('1.0', 'end')
+            self.ability_desc_text.insert('1.0', a.get('description', ''))
+
+        def update_selected_ability():
+            selection = self.ability_tree.selection()
+            if not selection:
+                return
+            idx = self.ability_tree.index(selection[0])
+            a = self.ability_list[idx]
+            a['name'] = self.ability_name_var.get().strip()
+            a['cost'] = int(self.ability_cost_var.get())
+            a['description'] = self.ability_desc_text.get('1.0', 'end-1c').strip()
+            # Update tree row values
+            self.ability_tree.item(selection[0], values=(a['name'], a['cost']))
+
         ttk.Button(add_ability_frame, text='Add Ability', command=add_ability).pack(side='left', padx=2)
         ttk.Button(add_ability_frame, text='Remove Selected', command=remove_ability).pack(side='left', padx=2)
+        ttk.Button(add_ability_frame, text='Update Selected', command=update_selected_ability).pack(side='left', padx=2)
+        self.ability_tree.bind('<<TreeviewSelect>>', on_select_ability)
 
         prop_frame = ttk.LabelFrame(content_frame, text='Special Properties/Abilities', padding=10)
         prop_frame.pack(fill='x', padx=20, pady=5)
