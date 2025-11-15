@@ -559,3 +559,41 @@ def test_magic_item_dialog_integration(monkeypatch, dummy_gui):
     assert len(dummy_gui.character.magic_items) == 1
     assert dummy_gui.character.magic_items[0]['name'] == 'Test Item'
 
+
+def test_magic_item_dialog_abilities_saved(monkeypatch, dummy_gui):
+    from gui_tabs import MagicItemsTab
+    mt = MagicItemsTab(dummy_gui.root, dummy_gui)
+    mt.build()
+    dummy_gui.character.magic_items = []
+
+    class FakeMagicItemDialog:
+        def __init__(self, parent, character, magic_item=None, item_index=None, on_save=None, gui=None):
+            if on_save:
+                mi = {
+                    'name': 'Test Staff',
+                    'type': 'Staff',
+                    'slot': 'None',
+                    'bonuses': [],
+                    'charges': 10,
+                    'max_charges': 10,
+                    'properties': '',
+                    'description': '',
+                    'abilities': [{'name': 'Cure', 'cost': 1}, {'name': 'Greater Cure', 'cost': 3}],
+                    'equipped': False
+                }
+                on_save(mi, item_index)
+
+    import sys
+    mitc = sys.modules.get(mt.__class__.__module__)
+    assert mitc is not None
+    monkeypatch.setattr(mitc, 'MagicItemDialog', FakeMagicItemDialog)
+
+    # Act
+    mt.show_create_magic_item_dialog()
+
+    # Assert
+    assert len(dummy_gui.character.magic_items) == 1
+    assert dummy_gui.character.magic_items[0]['name'] == 'Test Staff'
+    assert 'abilities' in dummy_gui.character.magic_items[0]
+    assert len(dummy_gui.character.magic_items[0]['abilities']) == 2
+

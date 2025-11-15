@@ -112,11 +112,77 @@ class MagicItemsTab(BaseTab):
         for mi in self.character.magic_items:
             if mi['name'] == name:
                 if mi.get('charges', 0) > 0:
-                    mi['charges'] -= 1
-                    self._post_item_change_update()
+                    # If item has abilities, prompt user to select which ability to use
+                    if mi.get('abilities'):
+                        ability = self._select_magic_item_ability(mi)
+                        if not ability:
+                            return
+                        cost = int(ability.get('cost', 1))
+                    else:
+                        cost = 1
+                    if mi['charges'] >= cost:
+                        mi['charges'] -= cost
+                        sel_name = name
+                        self._post_item_change_update()
+                        # Reselect the same tree row if possible
+                        for child in self.magic_items_tree.get_children():
+                            if self.magic_items_tree.item(child)['values'][1] == sel_name:
+                                self.magic_items_tree.selection_set(child)
+                                break
+                    else:
+                        messagebox.showinfo('Not Enough Charges', 'This item does not have enough charges for that ability.')
                 else:
                     messagebox.showinfo('No Charges', 'This item has no charges remaining.')
                 break
+
+    def _select_magic_item_ability(self, mi):
+        """Open a simple dialog to let the user select which ability of the magic item to use.
+        Returns the selected ability dict or None if cancelled.
+        """
+        abilities = mi.get('abilities', []) or []
+        if not abilities:
+            return None
+
+        # If only one ability, return it without prompting
+        if len(abilities) == 1:
+            return abilities[0]
+
+        # Create a simple modal selection dialog
+        dlg = tk.Toplevel(self.root)
+        dlg.transient(self.root)
+        dlg.title(f"Use Ability from {mi.get('name')}")
+        dlg.grab_set()
+
+        tree = ttk.Treeview(dlg, columns=('name', 'cost'), show='headings', height=6)
+        tree.heading('name', text='Name')
+        tree.heading('cost', text='Cost')
+        tree.column('name', width=200)
+        tree.column('cost', width=80)
+        tree.pack(side='top', fill='both', expand=True, padx=10, pady=10)
+
+        for a in abilities:
+            tree.insert('', 'end', values=(a.get('name', ''), a.get('cost', 1)))
+
+        chosen = {'ability': None}
+
+        def _choose():
+            sel = tree.selection()
+            if not sel:
+                return
+            idx = tree.index(sel[0])
+            chosen['ability'] = abilities[idx]
+            dlg.destroy()
+
+        def _cancel():
+            dlg.destroy()
+
+        btnf = ttk.Frame(dlg)
+        btnf.pack(side='bottom', pady=6)
+        ttk.Button(btnf, text='Use', command=_choose).pack(side='left', padx=6)
+        ttk.Button(btnf, text='Cancel', command=_cancel).pack(side='left', padx=6)
+
+        self.root.wait_window(dlg)
+        return chosen['ability']
 
     def recharge_magic_item(self):
         sel = self.magic_items_tree.selection()
@@ -128,7 +194,12 @@ class MagicItemsTab(BaseTab):
         for mi in self.character.magic_items:
             if mi['name'] == name:
                 mi['charges'] = mi.get('max_charges', 0)
+                sel_name = name
                 self._post_item_change_update()
+                for child in self.magic_items_tree.get_children():
+                    if self.magic_items_tree.item(child)['values'][1] == sel_name:
+                        self.magic_items_tree.selection_set(child)
+                        break
                 break
 
     def show_magic_item_details(self, event=None):
@@ -150,6 +221,15 @@ class MagicItemsTab(BaseTab):
             if mi.get('bonuses'):
                 b = ', '.join([f"{bb['type']} {'+' if bb['value'] >= 0 else ''}{bb['value']}" for bb in mi['bonuses'][:3]])
             props = mi.get('properties', '').replace('\n', ' | ')
+            ability_summary = ''
+            if mi.get('abilities'):
+                ability_summary = ', '.join([f"{a.get('name','')}({a.get('cost',1)})" for a in mi.get('abilities', [])[:3]])
+                if len(mi.get('abilities', [])) > 3:
+                    ability_summary += '...'
+                if props:
+                    props = f"{ability_summary} | {props}"
+                else:
+                    props = ability_summary
             if len(props) > 80:
                 props = props[:77] + '...'
             charges = f"{mi.get('charges', 0)}/{mi.get('max_charges', 0)}" if mi.get('max_charges', 0) > 0 else ''

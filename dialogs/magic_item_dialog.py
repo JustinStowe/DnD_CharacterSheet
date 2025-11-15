@@ -29,6 +29,7 @@ class MagicItemDialog:
             'properties': '',
             'description': '',
             'bonuses': [],
+            'abilities': [],
             'equipped': False
         }
 
@@ -131,6 +132,58 @@ class MagicItemDialog:
         ttk.Button(add_bonus_frame, text='Add Bonus', command=add_bonus).pack(side='left', padx=2)
         ttk.Button(add_bonus_frame, text='Remove Selected', command=remove_bonus).pack(side='left', padx=2)
 
+        # Abilities (for items like staves that have multiple abilities costing charges)
+        abilities_frame = ttk.LabelFrame(content_frame, text='Abilities (Charges)', padding=10)
+        abilities_frame.pack(fill='both', expand=True, padx=20, pady=5)
+
+        self.ability_list = self.defaults.get('abilities', []).copy()
+        ability_tree_frame = ttk.Frame(abilities_frame)
+        ability_tree_frame.pack(fill='both', expand=True)
+        self.ability_tree = ttk.Treeview(ability_tree_frame, columns=('name', 'cost'), show='headings', height=6)
+        self.ability_tree.heading('name', text='Ability Name')
+        self.ability_tree.heading('cost', text='Cost (Charges)')
+        self.ability_tree.column('name', width=300)
+        self.ability_tree.column('cost', width=120)
+        self.ability_tree.pack(side='left', fill='both', expand=True)
+
+        ability_scroll = ttk.Scrollbar(ability_tree_frame, command=self.ability_tree.yview)
+        ability_scroll.pack(side='right', fill='y')
+        self.ability_tree.config(yscrollcommand=ability_scroll.set)
+
+        for a in self.ability_list:
+            self.ability_tree.insert('', 'end', values=(a.get('name', ''), a.get('cost', 1)))
+
+        add_ability_frame = ttk.Frame(abilities_frame)
+        add_ability_frame.pack(fill='x', pady=5)
+        ttk.Label(add_ability_frame, text='Ability:').pack(side='left', padx=2)
+        self.ability_name_var = tk.StringVar(value='')
+        ttk.Entry(add_ability_frame, textvariable=self.ability_name_var, width=30).pack(side='left', padx=2)
+        ttk.Label(add_ability_frame, text='Cost:').pack(side='left', padx=2)
+        self.ability_cost_var = tk.IntVar(value=1)
+        ttk.Spinbox(add_ability_frame, from_=1, to=10, textvariable=self.ability_cost_var, width=5).pack(side='left', padx=2)
+
+        def add_ability():
+            name = self.ability_name_var.get().strip()
+            cost = int(self.ability_cost_var.get())
+            if not name:
+                messagebox.showwarning('Missing Name', 'Please enter an ability name.', parent=self.dialog)
+                return
+            a = {'name': name, 'cost': cost, 'description': ''}
+            self.ability_list.append(a)
+            self.ability_tree.insert('', 'end', values=(a['name'], a['cost']))
+            self.ability_name_var.set('')
+            self.ability_cost_var.set(1)
+
+        def remove_ability():
+            selection = self.ability_tree.selection()
+            if selection:
+                index = self.ability_tree.index(selection[0])
+                del self.ability_list[index]
+                self.ability_tree.delete(selection[0])
+
+        ttk.Button(add_ability_frame, text='Add Ability', command=add_ability).pack(side='left', padx=2)
+        ttk.Button(add_ability_frame, text='Remove Selected', command=remove_ability).pack(side='left', padx=2)
+
         prop_frame = ttk.LabelFrame(content_frame, text='Special Properties/Abilities', padding=10)
         prop_frame.pack(fill='x', padx=20, pady=5)
         self.prop_text = tk.Text(prop_frame, height=4, width=60, wrap='word')
@@ -167,6 +220,7 @@ class MagicItemDialog:
                 'properties': self.prop_text.get('1.0', 'end-1c').strip(),
                 'description': self.desc_text.get('1.0', 'end-1c').strip(),
                 'bonuses': self.bonus_list.copy(),
+                'abilities': self.ability_list.copy(),
                 'equipped': self.equipped_var.get()
             }
             # call the save callback if provided, otherwise write to character
