@@ -464,7 +464,7 @@ class Character:
         self.skill_misc = {skill: 0 for skill in self.skills.keys()}
         
         # Inventory
-        self.inventory = []  # List of dicts: {'name': str, 'weight': float, 'quantity': int, 'notes': str}
+        self.inventory = []  # List of dicts. For containers: {'name','weight','quantity','notes','is_container':bool,'capacity_lbs', 'count_contents_toward_carry', 'contents': [item,...]}
         
         # Currency (D&D 3e standard denominations)
         self.currency = {
@@ -906,10 +906,19 @@ class Character:
         }
     
     def get_total_weight_carried(self):
-        """Calculate total weight of all items in inventory"""
+        """Calculate total weight of all items in inventory, honoring container content counting rules."""
         total = 0
         for item in self.inventory:
-            total += item.get('weight', 0) * item.get('quantity', 1)
+            base_weight = item.get('weight', 0) * item.get('quantity', 1)
+            total += base_weight
+            if item.get('is_container') and item.get('contents'):
+                # Sum contents weight
+                contents_weight = 0
+                for c in item.get('contents', []):
+                    contents_weight += c.get('weight', 0) * c.get('quantity', 1)
+                # Add contents weight only if the container has the flag set
+                if item.get('count_contents_toward_carry', True):
+                    total += contents_weight
         return total
     
     def get_current_load(self):
@@ -945,14 +954,20 @@ class Character:
         else:  # overloaded
             return {'max_dex': 0, 'check_penalty': -6, 'speed_reduction': 10}
     
-    def add_item(self, name, weight, quantity=1, notes=''):
-        """Add an item to inventory"""
-        self.inventory.append({
+    def add_item(self, name, weight, quantity=1, notes='', is_container=False, capacity_lbs=0.0, count_contents_toward_carry=True, contents=None):
+        """Add an item to inventory. If `is_container` is True, you can provide `capacity_lbs` and `contents` (list of inventory dicts)."""
+        item = {
             'name': name,
             'weight': weight,
             'quantity': quantity,
             'notes': notes
-        })
+        }
+        if is_container:
+            item['is_container'] = True
+            item['capacity_lbs'] = float(capacity_lbs or 0)
+            item['count_contents_toward_carry'] = bool(count_contents_toward_carry)
+            item['contents'] = contents.copy() if contents else []
+        self.inventory.append(item)
     
     def remove_item(self, index):
         """Remove an item from inventory by index"""

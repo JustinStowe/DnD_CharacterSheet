@@ -324,6 +324,19 @@ class InventoryTab(BaseTab):
         self.entries['item_notes'].grid(
             row=1, column=1, columnspan=3, padx=2, pady=2, sticky='ew')
 
+        # Container options
+        self.is_container_var = tk.BooleanVar(value=False)
+        self.entries['item_is_container'] = ttk.Checkbutton(add_frame, text='Is Container', variable=self.is_container_var)
+        self.entries['item_is_container'].grid(row=0, column=6, padx=4)
+
+        ttk.Label(add_frame, text="Capacity (lbs):").grid(row=1, column=4, sticky='e', padx=2)
+        self.entries['item_capacity'] = ttk.Entry(add_frame, width=12)
+        self.entries['item_capacity'].grid(row=1, column=5, padx=2, pady=2)
+
+        self.count_contents_var = tk.BooleanVar(value=True)
+        self.entries['item_count_contents'] = ttk.Checkbutton(add_frame, text='Count contents towards carry', variable=self.count_contents_var)
+        self.entries['item_count_contents'].grid(row=1, column=6, padx=4)
+
         add_btn = ttk.Button(
             add_frame,
             text="Add Item",
@@ -338,7 +351,7 @@ class InventoryTab(BaseTab):
         scrollbar.pack(side='right', fill='y')
 
         # Create treeview for inventory
-        columns = ('name', 'weight', 'quantity', 'total_weight', 'notes')
+        columns = ('name', 'weight', 'quantity', 'total_weight', 'inside_weight', 'capacity', 'counted', 'notes')
         self.inventory_tree = ttk.Treeview(
             list_frame,
             columns=columns,
@@ -349,12 +362,18 @@ class InventoryTab(BaseTab):
         self.inventory_tree.heading('weight', text='Weight (ea)')
         self.inventory_tree.heading('quantity', text='Qty')
         self.inventory_tree.heading('total_weight', text='Total Weight')
+        self.inventory_tree.heading('inside_weight', text='Inside Weight')
+        self.inventory_tree.heading('capacity', text='Capacity')
+        self.inventory_tree.heading('counted', text='Counted?')
         self.inventory_tree.heading('notes', text='Notes')
 
         self.inventory_tree.column('name', width=200)
         self.inventory_tree.column('weight', width=80)
         self.inventory_tree.column('quantity', width=60)
         self.inventory_tree.column('total_weight', width=100)
+        self.inventory_tree.column('inside_weight', width=120)
+        self.inventory_tree.column('capacity', width=120)
+        self.inventory_tree.column('counted', width=60)
         self.inventory_tree.column('notes', width=250)
 
         self.inventory_tree.pack(fill='both', expand=True)
@@ -391,7 +410,15 @@ class InventoryTab(BaseTab):
             notes = self.entries['item_notes'].get().strip()
 
             # Add to character
-            self.character.add_item(name, weight, quantity, notes)
+            is_container = bool(self.is_container_var.get())
+            capacity = 0.0
+            try:
+                capacity_str = self.entries['item_capacity'].get().strip()
+                capacity = float(capacity_str) if capacity_str else 0.0
+            except Exception:
+                capacity = 0.0
+            count_contents = bool(self.count_contents_var.get())
+            self.character.add_item(name, weight, quantity, notes, is_container=is_container, capacity_lbs=capacity, count_contents_toward_carry=count_contents, contents=[])
 
             # Update display
             self.update_inventory_display()
@@ -402,6 +429,10 @@ class InventoryTab(BaseTab):
             self.entries['item_quantity'].delete(0, tk.END)
             self.entries['item_quantity'].insert(0, "1")
             self.entries['item_notes'].delete(0, tk.END)
+            # Reset container fields
+            self.is_container_var.set(False)
+            self.entries['item_capacity'].delete(0, tk.END)
+            self.count_contents_var.set(True)
 
             self.mark_modified()
 
@@ -477,6 +508,99 @@ class InventoryTab(BaseTab):
         notes_entry = ttk.Entry(form_frame, width=30)
         notes_entry.grid(row=3, column=1, padx=5, pady=5, sticky='ew')
         notes_entry.insert(0, current_item.get('notes', ''))
+
+        # Container options
+        is_container_var = tk.BooleanVar(value=current_item.get('is_container', False))
+        is_container_cb = ttk.Checkbutton(form_frame, text='Is Container', variable=is_container_var)
+        is_container_cb.grid(row=0, column=2, padx=5)
+
+        ttk.Label(form_frame, text='Capacity (lbs):').grid(row=1, column=2, sticky='e', padx=5)
+        capacity_entry = ttk.Entry(form_frame, width=12)
+        capacity_entry.grid(row=1, column=3, padx=5)
+        capacity_entry.insert(0, str(current_item.get('capacity_lbs', '')))
+
+        count_contents_var = tk.BooleanVar(value=current_item.get('count_contents_toward_carry', True))
+        count_contents_cb = ttk.Checkbutton(form_frame, text='Count contents towards carry', variable=count_contents_var)
+        count_contents_cb.grid(row=2, column=2, columnspan=2, padx=5)
+
+        def manage_contents():
+            # Open a small dialog to manage contents
+            contents = current_item.get('contents', []) or []
+            dlg = tk.Toplevel(self.root)
+            dlg.title('Manage Contents')
+            dlg.transient(self.root)
+            dlg.grab_set()
+
+            cf = ttk.Frame(dlg, padding=10)
+            cf.pack(fill='both', expand=True)
+
+            content_tree = ttk.Treeview(cf, columns=('name', 'weight', 'quantity', 'notes'), show='headings')
+            for h, w in [('name', 150), ('weight', 80), ('quantity', 60), ('notes', 200)]:
+                content_tree.heading(h, text=h.title())
+                content_tree.column(h, width=w)
+            content_tree.pack(fill='both', expand=True)
+
+            for c in contents:
+                content_tree.insert('', 'end', values=(c.get('name', ''), f"{c.get('weight',0):.1f}", c.get('quantity',1), c.get('notes','')))
+
+            # Add content controls
+            addf = ttk.Frame(cf)
+            addf.pack(fill='x', pady=(5,0))
+            name_c = ttk.Entry(addf, width=20)
+            name_c.grid(row=0, column=0, padx=2)
+            weight_c = ttk.Entry(addf, width=8)
+            weight_c.grid(row=0, column=1, padx=2)
+            q_c = ttk.Entry(addf, width=8)
+            q_c.insert(0, '1')
+            q_c.grid(row=0, column=2, padx=2)
+            notes_c = ttk.Entry(addf, width=30)
+            notes_c.grid(row=0, column=3, padx=2)
+
+            def add_content_item():
+                nm = name_c.get().strip()
+                try:
+                    wt = float(weight_c.get()) if weight_c.get() else 0.0
+                except Exception:
+                    wt = 0.0
+                try:
+                    q = int(q_c.get()) if q_c.get() else 1
+                except Exception:
+                    q = 1
+                nt = notes_c.get().strip()
+                item = {'name': nm, 'weight': wt, 'quantity': q, 'notes': nt}
+                contents.append(item)
+                content_tree.insert('', 'end', values=(nm, f"{wt:.1f}", q, nt))
+                name_c.delete(0, tk.END)
+                weight_c.delete(0, tk.END)
+                q_c.delete(0, tk.END)
+                q_c.insert(0, '1')
+                notes_c.delete(0, tk.END)
+
+            def remove_content_item():
+                sel = content_tree.selection()
+                if not sel:
+                    return
+                idx = content_tree.index(sel[0])
+                content_tree.delete(sel[0])
+                if 0 <= idx < len(contents):
+                    contents.pop(idx)
+
+            ttk.Button(addf, text='Add', command=add_content_item).grid(row=0, column=4, padx=2)
+            ttk.Button(addf, text='Remove', command=remove_content_item).grid(row=0, column=5, padx=2)
+
+            def close_dlg():
+                dlg.destroy()
+
+            btnf = ttk.Frame(cf)
+            btnf.pack(fill='x', pady=6)
+            ttk.Button(btnf, text='Close', command=close_dlg).pack(side='left')
+            self.root.wait_window(dlg)
+            # Save contents back
+            current_item['contents'] = contents
+
+        if current_item.get('is_container'):
+            manage_btn = ttk.Button(form_frame, text='Manage Contents', command=manage_contents)
+            manage_btn.grid(row=3, column=2, padx=5, pady=5)
         
         form_frame.columnconfigure(1, weight=1)
         
@@ -499,12 +623,22 @@ class InventoryTab(BaseTab):
                 notes = notes_entry.get().strip()
                 
                 # Update the item in character's inventory
-                self.character.inventory[index] = {
+                new_item = {
                     'name': name,
                     'weight': weight,
                     'quantity': quantity,
                     'notes': notes
                 }
+                if is_container_var.get():
+                    new_item['is_container'] = True
+                    try:
+                        new_item['capacity_lbs'] = float(capacity_entry.get().strip() or 0)
+                    except Exception:
+                        new_item['capacity_lbs'] = 0.0
+                    new_item['count_contents_toward_carry'] = bool(count_contents_var.get())
+                    new_item['contents'] = current_item.get('contents', []).copy()
+
+                self.character.inventory[index] = new_item
                 
                 # Update display
                 self.update_inventory_display()
@@ -547,13 +681,22 @@ class InventoryTab(BaseTab):
             weight = item['weight']
             quantity = item['quantity']
             total_weight = weight * quantity
+            inside_weight = ''
+            capacity = ''
+            counted = ''
+            if item.get('is_container'):
+                # calculate contents weight
+                contents_weight = 0
+                for c in item.get('contents', []):
+                    contents_weight += c.get('weight', 0) * c.get('quantity', 1)
+                inside_weight = f"{contents_weight:.1f}"
+                capacity = f"{item.get('capacity_lbs', 0):.1f}"
+                counted = 'Yes' if item.get('count_contents_toward_carry', True) else 'No'
             notes = item.get('notes', '')
 
             self.inventory_tree.insert(
                 '', 'end', values=(
-                    name, f"{
-                        weight:.1f}", quantity, f"{
-                        total_weight:.1f}", notes))
+                    name, f"{weight:.1f}", quantity, f"{total_weight:.1f}", inside_weight, capacity, counted, notes))
 
         # Update carrying capacity
         capacity = self.character.get_carrying_capacity()
