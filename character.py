@@ -25,6 +25,10 @@ from character_parts.abilities import AbilityManager
 from character_parts.saves import SaveManager
 from character_parts.ac import ACManager
 from character_parts.leveling import LevelManager
+from character_parts.feats import FeatManager
+from character_parts.spells import SpellManager
+from character_parts.ac import ACManager
+from character_parts.leveling import LevelManager
 
 # D&D 3e Class definitions
 CLASS_DEFINITIONS = {
@@ -582,6 +586,10 @@ class Character:
         self.ac_manager = ACManager(self)
         # Leveling manager
         self.level_manager = LevelManager(self)
+        # Feats Manager
+        self.feat_manager = FeatManager(self)
+        # Spells Manager
+        self.spell_manager = SpellManager(self)
     
     def get_equipment_bonus(self, bonus_type):
         """Compatibility wrapper: delegate to equipment manager."""
@@ -621,8 +629,7 @@ class Character:
     
     def has_feat(self, feat_name):
         """Check if character has a specific feat (case-insensitive)"""
-        feat_name_lower = feat_name.lower()
-        return any(f['name'].lower() == feat_name_lower for f in self.feats)
+        return self.feat_manager.has_feat(feat_name)
     
     def has_class(self, class_name):
         """Check if character has levels in a specific class"""
@@ -1035,25 +1042,11 @@ class Character:
                   components='', duration='', saving_throw='', spell_resistance='', 
                   description='', reference='', prepared=False):
         """Add a spell to the spell list"""
-        self.spells.append({
-            'name': name,
-            'level': level,
-            'school': school,
-            'casting_time': casting_time,
-            'range': range_,
-            'components': components,
-            'duration': duration,
-            'saving_throw': saving_throw,
-            'spell_resistance': spell_resistance,
-            'description': description,
-            'reference': reference,
-            'prepared': prepared
-        })
+        return self.spell_manager.add_spell(name=name, level=level, school=school, casting_time=casting_time, range_=range_, components=components, duration=duration, saving_throw=saving_throw, spell_resistance=spell_resistance, description=description, reference=reference, prepared=prepared)
     
     def remove_spell(self, index):
         """Remove a spell from the spell list by index"""
-        if 0 <= index < len(self.spells):
-            self.spells.pop(index)
+        return self.spell_manager.remove_spell(index)
     
     def reset_spell_slots(self):
         """Reset all used spell slots to 0 (for resting)"""
@@ -1061,19 +1054,10 @@ class Character:
             self.spell_slots_used[level] = 0
     
     def add_feat(self, name, feat_type='General', description='', prerequisites='', benefit=''):
-        """Add a feat"""
-        self.feats.append({
-            'name': name,
-            'type': feat_type,
-            'description': description,
-            'prerequisites': prerequisites,
-            'benefit': benefit
-        })
+        return self.feat_manager.add_feat(name, feat_type, description, prerequisites, benefit)
     
     def remove_feat(self, index):
-        """Remove a feat by index"""
-        if 0 <= index < len(self.feats):
-            self.feats.pop(index)
+        return self.feat_manager.remove_feat(index)
     
     def add_special_ability(self, name, source='Class', description='', uses_per_day=0):
         """Add a special ability"""
@@ -1339,47 +1323,31 @@ class Character:
     
     def get_epic_info(self):
         """Get comprehensive epic level information"""
-        return get_epic_level_info(self.get_total_level())
+        return self.feat_manager.get_epic_info()
     
     def get_max_skill_ranks(self):
         """Get maximum skill ranks (level + 3, works for epic levels too)"""
-        return calculate_epic_skill_max_ranks(self.get_total_level())
+        return self.feat_manager.get_max_skill_ranks()
     
     def get_epic_feats_available(self):
         """Get number of epic feats character should have at current level"""
-        return get_epic_feat_progression(self.get_total_level())
+        return self.feat_manager.get_epic_feats_available()
     
     def add_epic_feat(self, feat_name):
-        """Add an epic feat to the character"""
-        if feat_name not in self.epic_feats:
-            self.epic_feats.append(feat_name)
+        return self.feat_manager.add_epic_feat(feat_name)
     
     def remove_epic_feat(self, feat_name):
-        """Remove an epic feat from the character"""
-        if feat_name in self.epic_feats:
-            self.epic_feats.remove(feat_name)
+        return self.feat_manager.remove_epic_feat(feat_name)
     
     def check_epic_feat_requirements(self, feat_name):
-        """Check if character meets epic feat prerequisites"""
-        return check_epic_feat_prerequisites(feat_name, self)
+        return self.feat_manager.check_epic_feat_requirements(feat_name)
     
     def get_all_epic_feats_list(self):
-        """Get list of all available epic feats"""
-        return get_all_epic_feats()
+        return self.feat_manager.get_all_epic_feats_list()
     
     def apply_epic_ability_increase(self, ability_name):
-        """Apply an epic ability score increase"""
-        if ability_name in self.epic_ability_increases:
-            self.epic_ability_increases[ability_name] += 1
-            # Actually increase the ability score
-            current_score = getattr(self, ability_name)
-            setattr(self, ability_name, current_score + 1)
+        return self.feat_manager.apply_epic_ability_increase(ability_name)
     
     def update_xp_for_epic_level(self):
-        """Update XP requirement for next level (handles epic levels)"""
-        current_level = self.get_total_level()
-        if current_level >= 20:
-            self.next_level_xp = get_epic_xp_for_level(current_level + 1)
-        else:
-            self.next_level_xp = (current_level + 1) * 1000
+        return self.feat_manager.update_xp_for_epic_level()
 
