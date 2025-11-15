@@ -666,8 +666,11 @@ class SpellsTab(BaseTab):
         index = current_tree.index(item)
 
         # Find the spell in this level's list
-        level_spells = [
-            s for s in self.character.spells if s['level'] == current_tab_index]
+        # Use the same sort order as displayed so indexes match tree order
+        level_spells = sorted(
+            [s for s in self.character.spells if s['level'] == current_tab_index],
+            key=lambda x: x['name']
+        )
         if index < len(level_spells):
             spell_to_remove = level_spells[index]
             # Find actual index in full spell list
@@ -699,8 +702,11 @@ class SpellsTab(BaseTab):
         index = widget.index(item)
 
         # Find the spell in this level's list
-        level_spells = [
-            s for s in self.character.spells if s['level'] == spell_level]
+        # Use the same sort order as displayed so indexes match tree order
+        level_spells = sorted(
+            [s for s in self.character.spells if s['level'] == spell_level],
+            key=lambda x: x['name']
+        )
         if index < len(level_spells):
             spell = level_spells[index]
             spell['prepared'] = not spell['prepared']
@@ -777,8 +783,11 @@ class SpellsTab(BaseTab):
     def show_spell_detail_dialog(self, spell_level, index):
         """Show detailed view/edit dialog for a spell"""
         # Find the spell in this level's list
-        level_spells = [
-            s for s in self.character.spells if s['level'] == spell_level]
+        # Use the same sort order as displayed so indexes match tree order
+        level_spells = sorted(
+            [s for s in self.character.spells if s['level'] == spell_level],
+            key=lambda x: x['name']
+        )
         
         if index >= len(level_spells):
             return
