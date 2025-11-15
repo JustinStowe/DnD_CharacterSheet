@@ -8,10 +8,21 @@ import json
 # Import the class under test
 from character_sheet_gui import CharacterSheetGUI, show_startup_dialog
 
-# --- Fixtures and Mocks ---
+# Determine if Tk is usable in this environment. If not, we'll skip tests that require
+# a real Tk instance to avoid failing in headless CI environments or systems without
+# a configured Tcl/Tk runtime (which raises TclError on tk.Tk()).
+try:
+    _tmp_root = tk.Tk()
+    _tmp_root.withdraw()
+    _tmp_root.destroy()
+    TK_AVAILABLE = True
+except Exception:
+    TK_AVAILABLE = False
+# dummy_gui fixture is provided centrally by testing_suite/conftest.py
+
 
 class DummyCharacter:
-    """Minimal stub for Character with required attributes and methods."""
+    """Minimal stub for Character with required attributes and methods used by tests."""
     def __init__(self):
         self.name = ""
         self.player = ""
@@ -90,47 +101,6 @@ class DummyCharacter:
     def get_ranged_attack_bonus(self): return 3
     def get_equipment_bonus(self, _): return 0
 
-@pytest.fixture
-def dummy_gui(monkeypatch):
-    # Arrange
-    root = tk.Tk()
-    root.withdraw()  # Hide the main window
-    gui = CharacterSheetGUI(root)
-    gui.character = DummyCharacter()
-    # Patch out messagebox and filedialog to avoid GUI popups
-    monkeypatch.setattr(messagebox, "askyesnocancel", lambda *a, **k: False)
-    monkeypatch.setattr(messagebox, "showinfo", lambda *a, **k: None)
-    monkeypatch.setattr(messagebox, "showerror", lambda *a, **k: None)
-    monkeypatch.setattr(messagebox, "showwarning", lambda *a, **k: None)
-    monkeypatch.setattr(filedialog, "asksaveasfilename", lambda *a, **k: "testfile.json")
-    monkeypatch.setattr(filedialog, "askopenfilename", lambda *a, **k: "testfile.json")
-    # Patch out update_character_from_gui and populate_fields_from_character to avoid side effects
-    gui.update_character_from_gui = lambda: None
-    gui.populate_fields_from_character = lambda: None
-    gui.update_all_calculated_fields = lambda: None
-    gui.update_title = lambda: None
-    gui.entries = {k: tk.Entry(root) for k in [
-        'name', 'player', 'level', 'race', 'alignment', 'deity', 'gender', 'height', 'weight',
-        'hair_color', 'eye_color', 'max_hp', 'current_hp', 'armor_bonus', 'shield_bonus',
-        'natural_armor', 'deflection_bonus', 'misc_ac_bonus', 'fort_base', 'fort_misc',
-        'ref_base', 'ref_misc', 'will_base', 'will_misc', 'bab', 'initiative_misc',
-        'spell_resistance'
-    ]}
-    for entry in gui.entries.values():
-        entry.insert(0, "1")
-    gui.labels = {k: tk.Label(root) for k in [
-        'strength_mod', 'dexterity_mod', 'constitution_mod', 'intelligence_mod', 'wisdom_mod', 'charisma_mod',
-        'fort_total', 'ref_total', 'will_total', 'fort_ability', 'ref_ability', 'will_ability',
-        'ac_total', 'touch_ac', 'flatfooted_ac', 'dex_ac', 'initiative', 'melee_attack', 'ranged_attack'
-    ]}
-    # Patch tab attributes
-    gui.main_tab = types.SimpleNamespace(update_class_display=lambda: None, update_ac_components=lambda *a: None, update_save_components=lambda *a: None, refresh_weapons=lambda: None)
-    gui.skills_tab = types.SimpleNamespace(refresh_skills_display=lambda: None)
-    gui.inventory_tab = types.SimpleNamespace(update_inventory_display=lambda: None, load_currency=lambda: None)
-    gui.spells_tab = types.SimpleNamespace(update=lambda: None)
-    gui.feats_tab = types.SimpleNamespace(update_feats_display=lambda: None, update_abilities_display=lambda: None)
-    gui.magic_items_tab = types.SimpleNamespace(refresh_magic_items=lambda: None)
-    return gui
 
 # --- Tests ---
 
@@ -370,6 +340,7 @@ def test_update_saves_display(dummy_gui):
     # Assert
     assert dummy_gui.labels["fort_total"].cget("text") == "+1"
 
+@pytest.mark.skipif(not TK_AVAILABLE, reason="Tkinter not available")
 def test_create_labeled_entry(dummy_gui):
     # Arrange
     parent = tk.Frame(dummy_gui.root)
@@ -380,6 +351,7 @@ def test_create_labeled_entry(dummy_gui):
     # Assert
     assert isinstance(entry, tk.Entry)
 
+@pytest.mark.skipif(not TK_AVAILABLE, reason="Tkinter not available")
 def test_create_labeled_readonly(dummy_gui):
     # Arrange
     parent = tk.Frame(dummy_gui.root)
@@ -389,8 +361,11 @@ def test_create_labeled_readonly(dummy_gui):
 
     # Assert
     assert isinstance(entry, tk.Entry)
-    assert entry.cget("state") == "readonly"
+    # tk.Entry.cget() may return an index object or a string depending on platform
+    # so compare as string to be robust
+    assert 'readonly' in str(entry.cget("state"))
 
+@pytest.mark.skipif(not TK_AVAILABLE, reason="Tkinter not available")
 def test_bind_mousewheel(dummy_gui):
     # Arrange
     canvas = tk.Canvas(dummy_gui.root)
@@ -424,18 +399,51 @@ def test_populate_fields_from_character(dummy_gui):
     # Check that entry is set to character name
     assert dummy_gui.entries["name"].get() == ""
 
+@pytest.mark.skipif(not TK_AVAILABLE, reason="Tkinter not available")
 def test_show_startup_dialog(monkeypatch):
     # Arrange
     # Patch filedialog to avoid actual file dialog
     monkeypatch.setattr(filedialog, "askopenfilename", lambda **kwargs: "testfile.json")
-    # Patch Tk to avoid opening windows
-    monkeypatch.setattr(tk, "Tk", lambda: tk.Tk())
-    # Patch Toplevel to avoid actual window
-    monkeypatch.setattr(tk, "Toplevel", lambda root: tk.Toplevel(root))
-    # Patch mainloop and destroy to no-op
-    monkeypatch.setattr(tk.Tk, "mainloop", lambda self: None)
-    monkeypatch.setattr(tk.Tk, "destroy", lambda self: None)
-    monkeypatch.setattr(tk.Toplevel, "destroy", lambda self: None)
+    # Patch Tk/Toplevel with minimal fake implementations to avoid opening
+    # real windows during tests and to avoid recursion in monkeypatching.
+    class FakeRoot:
+        def mainloop(self):
+            return None
+        def destroy(self):
+            return None
+        def withdraw(self):
+            return None
+        def title(self, *a, **k):
+            return None
+        def geometry(self, *a, **k):
+            return None
+        def quit(self):
+            return None
+
+    class FakeToplevel:
+        def __init__(self, root):
+            pass
+        def title(self, text):
+            return None
+        def geometry(self, *a, **k):
+            return None
+        def update_idletasks(self):
+            return None
+        def winfo_screenwidth(self):
+            return 800
+        def winfo_width(self):
+            return 400
+        def winfo_screenheight(self):
+            return 600
+        def winfo_height(self):
+            return 200
+        def protocol(self, *a, **k):
+            return None
+        def destroy(self):
+            return None
+
+    monkeypatch.setattr(tk, "Tk", lambda: FakeRoot())
+    monkeypatch.setattr(tk, "Toplevel", lambda root: FakeToplevel(root))
     # Patch dialog methods to simulate user action
     # Simulate user clicking "Create New Character"
     result = {}
@@ -447,6 +455,8 @@ def test_show_startup_dialog(monkeypatch):
         result["file"] = "testfile.json"
         raise SystemExit
     monkeypatch.setattr("tkinter.ttk.Button", lambda *a, **k: type("B", (), {"pack": lambda *a, **k: None})())
+    monkeypatch.setattr("tkinter.ttk.Label", lambda *a, **k: type("L", (), {"pack": lambda *a, **k: None})())
+    monkeypatch.setattr("tkinter.ttk.Frame", lambda *a, **k: type("F", (), {"pack": lambda *a, **k: None})())
     # Act & Assert
     try:
         show_startup_dialog()

@@ -3,7 +3,7 @@ import tkinter as tk
 from gui_tabs import MagicItemsTab, SpellsTab
 
 
-def test_spell_double_click_mapping():
+def test_spell_double_click_mapping(dummy_gui):
     # Minimal dummy character with out-of-order spell insertion
     class DummyCharacter:
         def __init__(self):
@@ -19,19 +19,8 @@ def test_spell_double_click_mapping():
             self.spell_slots_used = {}
             self.spellcasting_ability = 'intelligence'
 
-    class DummyGUI:
-        def __init__(self):
-            self.character = DummyCharacter()
-            self.root = tk.Tk()
-            self.root.withdraw()
-            self.entries = {}
-            self.labels = {}
-            self.update_all_calculated_fields = lambda *a, **k: None
-            self.update_ac_display = lambda *a, **k: None
-            self.update_saves_display = lambda *a, **k: None
-            self.mark_modified = lambda *a, **k: None
-
-    gui = DummyGUI()
+    dummy_gui.character = DummyCharacter()
+    gui = dummy_gui
     try:
         frame = tk.Frame(gui.root)
         st = SpellsTab(frame, gui)
