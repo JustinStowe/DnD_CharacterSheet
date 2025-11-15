@@ -20,6 +20,9 @@ from Epic_levels.epic_levels import (
     get_all_epic_feats,
     check_epic_feat_prerequisites
 )
+from character_parts.equipment import EquipmentManager
+from character_parts.abilities import AbilityManager
+from character_parts.saves import SaveManager
 
 # D&D 3e Class definitions
 CLASS_DEFINITIONS = {
@@ -567,63 +570,48 @@ class Character:
             'wisdom': 0,
             'charisma': 0
         }
+        # Equipment manager (encapsulates equipment/magic item logic)
+        self.equipment_manager = EquipmentManager(self)
+        # Ability manager
+        self.ability_manager = AbilityManager(self)
+        # Save manager
+        self.save_manager = SaveManager(self)
     
     def get_equipment_bonus(self, bonus_type):
-        """
-        Calculate total bonus from equipped magic items for a specific bonus type.
-        Returns the highest bonus of each type (bonuses of same type don't stack).
-        """
-        bonuses = []
-        for item in self.magic_items:
-            if item.get('equipped', False) and 'bonuses' in item:
-                for bonus in item['bonuses']:
-                    if bonus['type'] == bonus_type:
-                        bonuses.append(bonus['value'])
-        
-        return max(bonuses) if bonuses else 0
+        """Compatibility wrapper: delegate to equipment manager."""
+        return self.equipment_manager.get_equipment_bonus(bonus_type)
     
     def get_all_equipment_bonuses(self):
-        """Get a summary of all equipment bonuses currently applied"""
-        bonus_summary = {}
-        for item in self.magic_items:
-            if item.get('equipped', False) and 'bonuses' in item:
-                for bonus in item['bonuses']:
-                    bonus_type = bonus['type']
-                    bonus_value = bonus['value']
-                    
-                    # Track highest bonus of each type
-                    if bonus_type not in bonus_summary or bonus_value > bonus_summary[bonus_type]:
-                        bonus_summary[bonus_type] = bonus_value
-        
-        return bonus_summary
+        """Compatibility wrapper: delegate to equipment manager."""
+        return self.equipment_manager.get_all_equipment_bonuses()
         
     def get_ability_modifier(self, ability_score):
         """Calculate ability modifier from score"""
-        return (ability_score - 10) // 2
+        return self.ability_manager.get_ability_modifier(ability_score)
     
     def get_str_modifier(self):
         """Get Strength modifier"""
-        return self.get_ability_modifier(self.strength + self.str_temp_mod + self.get_equipment_bonus('Strength'))
+        return self.ability_manager.get_str_modifier()
     
     def get_dex_modifier(self):
         """Get Dexterity modifier"""
-        return self.get_ability_modifier(self.dexterity + self.dex_temp_mod + self.get_equipment_bonus('Dexterity'))
+        return self.ability_manager.get_dex_modifier()
     
     def get_con_modifier(self):
         """Get Constitution modifier"""
-        return self.get_ability_modifier(self.constitution + self.con_temp_mod + self.get_equipment_bonus('Constitution'))
+        return self.ability_manager.get_con_modifier()
     
     def get_int_modifier(self):
         """Get Intelligence modifier"""
-        return self.get_ability_modifier(self.intelligence + self.int_temp_mod + self.get_equipment_bonus('Intelligence'))
+        return self.ability_manager.get_int_modifier()
     
     def get_wis_modifier(self):
         """Get Wisdom modifier"""
-        return self.get_ability_modifier(self.wisdom + self.wis_temp_mod + self.get_equipment_bonus('Wisdom'))
+        return self.ability_manager.get_wis_modifier()
     
     def get_cha_modifier(self):
         """Get Charisma modifier"""
-        return self.get_ability_modifier(self.charisma + self.cha_temp_mod + self.get_equipment_bonus('Charisma'))
+        return self.ability_manager.get_cha_modifier()
     
     def has_feat(self, feat_name):
         """Check if character has a specific feat (case-insensitive)"""
@@ -641,43 +629,15 @@ class Character:
     
     def get_fortitude_save(self):
         """Calculate total Fortitude save"""
-        magic_resistance = self.get_equipment_bonus('Resistance (All Saves)')
-        base_save = self.fort_base + self.get_con_modifier() + self.fort_misc + magic_resistance
-        
-        # Divine Grace: Paladin adds Cha modifier to all saves
-        if self.has_class('Paladin') and self.get_class_level('Paladin') >= 2:
-            base_save += max(0, self.get_cha_modifier())  # Divine Grace only adds if positive
-        
-        return base_save
+        return self.save_manager.get_fortitude_save()
     
     def get_reflex_save(self):
         """Calculate total Reflex save"""
-        magic_resistance = self.get_equipment_bonus('Resistance (All Saves)')
-        base_save = self.ref_base + self.get_dex_modifier() + self.ref_misc + magic_resistance
-        
-        # Divine Grace: Paladin adds Cha modifier to all saves
-        if self.has_class('Paladin') and self.get_class_level('Paladin') >= 2:
-            base_save += max(0, self.get_cha_modifier())  # Divine Grace only adds if positive
-        
-        return base_save
+        return self.save_manager.get_reflex_save()
     
     def get_will_save(self):
         """Calculate total Will save"""
-        magic_resistance = self.get_equipment_bonus('Resistance (All Saves)')
-        
-        # Force of Personality: Use Cha modifier instead of Wis for Will saves
-        if self.has_feat('Force of Personality'):
-            ability_mod = self.get_cha_modifier()
-        else:
-            ability_mod = self.get_wis_modifier()
-        
-        base_save = self.will_base + ability_mod + self.will_misc + magic_resistance
-        
-        # Divine Grace: Paladin adds Cha modifier to all saves
-        if self.has_class('Paladin') and self.get_class_level('Paladin') >= 2:
-            base_save += max(0, self.get_cha_modifier())  # Divine Grace only adds if positive
-        
-        return base_save
+        return self.save_manager.get_will_save()
     
     def get_ac(self):
         """Calculate total Armor Class"""
