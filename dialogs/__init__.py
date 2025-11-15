@@ -4,5 +4,6 @@ Contains reusable dialog classes for the application.
 """
 from .character_creation_dialog import CharacterCreationDialog
 from .startup_dialog import StartupDialog
+from .magic_item_dialog import MagicItemDialog
 
-__all__ = ['CharacterCreationDialog', 'StartupDialog']
+__all__ = ['CharacterCreationDialog', 'StartupDialog', 'MagicItemDialog']

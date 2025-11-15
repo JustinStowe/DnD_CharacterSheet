@@ -613,10 +613,38 @@ class CharacterSheetGUI:
             self.character.get_cha_modifier
         ]
         
+        # Map of canonical ability names to equipment bonus keys
+        equip_map = {
+            'strength': 'Strength',
+            'dexterity': 'Dexterity',
+            'constitution': 'Constitution',
+            'intelligence': 'Intelligence',
+            'wisdom': 'Wisdom',
+            'charisma': 'Charisma'
+        }
         for ability, func in zip(abilities, ability_funcs):
             mod = func()
             mod_str = f"+{mod}" if mod >= 0 else str(mod)
             self.labels[f'{ability}_mod'].config(text=mod_str)
+
+            # Equipment bonus for ability - show a blue label if non-zero
+            equip_key = equip_map.get(ability, ability.capitalize())
+            equip_val = self.character.get_equipment_bonus(equip_key)
+            equip_label_key = f'{ability}_equip'
+            if equip_label_key in self.labels:
+                if equip_val != 0:
+                    if equip_val > 0:
+                        text = f"+{equip_val} (magic)"
+                        color = 'blue'
+                    else:
+                        text = f"{equip_val} (magic)"
+                        color = 'red'
+                    try:
+                        self.labels[equip_label_key].config(text=text, foreground=color)
+                    except Exception:
+                        self.labels[equip_label_key].config(text=text, fg=color)
+                else:
+                    self.labels[equip_label_key].config(text="")
         
         # Update saving throws
         # Read base values only from entry fields (not including magic bonuses)

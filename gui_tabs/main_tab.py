@@ -207,6 +207,11 @@ class MainTab(BaseTab):
                 ability_frame, text="+0", width=5, relief='sunken')
             self.labels[f'{ability}_mod'].grid(row=i, column=3, padx=2, pady=2)
 
+            # Equipment bonus indicator (shows active equipment bonus in blue)
+            self.labels[f'{ability}_equip'] = ttk.Label(
+                ability_frame, text="", width=12)
+            self.labels[f'{ability}_equip'].grid(row=i, column=6, padx=2, pady=2)
+
             # Temp modifier
             temp_label = ttk.Label(ability_frame, text="Temp:")
             temp_label.grid(row=i, column=4, sticky='e', padx=2, pady=2)
@@ -304,10 +309,10 @@ class MainTab(BaseTab):
             self.entries[f'{save_key}_misc'].bind(
                 '<FocusOut>', lambda e: self.gui.update_all_calculated_fields())
             
-            # Magic bonus label (initially empty)
+            # Magic bonus label (initially empty) - small blue tk.Label for consistency
             magic_label_key = f'{save_key}_magic'
             self.labels[magic_label_key] = ttk.Label(
-                saves_frame, text="", foreground='blue', font=('Arial', 10, 'bold'))
+                saves_frame, text="", width=12)
             self.labels[magic_label_key].grid(row=i, column=8, sticky='w', padx=2)
         
         # Initialize save magic bonuses display (will show when items are equipped)
@@ -426,10 +431,10 @@ class MainTab(BaseTab):
                 self.entries[comp_key].bind(
                     '<FocusOut>', lambda e: self.gui.update_all_calculated_fields())
             
-            # Add label to show magic item bonus for ALL components
+            # Add label to show magic item bonus for ALL components (small blue label)
             magic_label_key = f'{comp_key}_magic'
             self.labels[magic_label_key] = ttk.Label(
-                ac_frame, text="", foreground='blue', font=('Arial', 10, 'bold'))
+                ac_frame, text="", width=12)
             self.labels[magic_label_key].grid(row=i + 1, column=2, sticky='w', padx=2)
         
         # Initialize magic bonuses display (will show when items are equipped)
@@ -1808,11 +1813,17 @@ class MainTab(BaseTab):
         }
         
         for label_key, bonus_value in bonus_mapping.items():
-            if label_key in self.labels:
-                if bonus_value > 0:
-                    self.labels[label_key].config(text=f"+{bonus_value} (magic)", foreground='blue')
-                else:
-                    self.labels[label_key].config(text="")
+                if label_key in self.labels:
+                    if bonus_value != 0:
+                        # Use a unified format of "+N (magic)" or "-N (magic)"
+                        text = f"+{bonus_value} (magic)" if bonus_value > 0 else f"{bonus_value} (magic)"
+                        color = 'blue' if bonus_value > 0 else 'red'
+                        try:
+                            self.labels[label_key].config(text=text, fg=color)
+                        except Exception:
+                            self.labels[label_key].config(text=text, foreground=color)
+                    else:
+                        self.labels[label_key].config(text="")
     
     def update_save_components(self, magic_resistance):
         """Update saving throw displays to show magic item bonuses"""
@@ -1820,7 +1831,13 @@ class MainTab(BaseTab):
         for save_key in ['fort', 'ref', 'will']:
             label_key = f'{save_key}_magic'
             if label_key in self.labels:
-                if magic_resistance > 0:
-                    self.labels[label_key].config(text=f"+{magic_resistance} (magic)", foreground='blue')
+                if magic_resistance != 0:
+                    # Format: "+N (magic)" or "-N (magic)"
+                    text = f"+{magic_resistance} (magic)" if magic_resistance > 0 else f"{magic_resistance} (magic)"
+                    color = 'blue' if magic_resistance > 0 else 'red'
+                    try:
+                        self.labels[label_key].config(text=text, fg=color)
+                    except Exception:
+                        self.labels[label_key].config(text=text, foreground=color)
                 else:
                     self.labels[label_key].config(text="")

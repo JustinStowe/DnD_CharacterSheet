@@ -603,27 +603,27 @@ class Character:
     
     def get_str_modifier(self):
         """Get Strength modifier"""
-        return self.get_ability_modifier(self.strength + self.str_temp_mod)
+        return self.get_ability_modifier(self.strength + self.str_temp_mod + self.get_equipment_bonus('Strength'))
     
     def get_dex_modifier(self):
         """Get Dexterity modifier"""
-        return self.get_ability_modifier(self.dexterity + self.dex_temp_mod)
+        return self.get_ability_modifier(self.dexterity + self.dex_temp_mod + self.get_equipment_bonus('Dexterity'))
     
     def get_con_modifier(self):
         """Get Constitution modifier"""
-        return self.get_ability_modifier(self.constitution + self.con_temp_mod)
+        return self.get_ability_modifier(self.constitution + self.con_temp_mod + self.get_equipment_bonus('Constitution'))
     
     def get_int_modifier(self):
         """Get Intelligence modifier"""
-        return self.get_ability_modifier(self.intelligence + self.int_temp_mod)
+        return self.get_ability_modifier(self.intelligence + self.int_temp_mod + self.get_equipment_bonus('Intelligence'))
     
     def get_wis_modifier(self):
         """Get Wisdom modifier"""
-        return self.get_ability_modifier(self.wisdom + self.wis_temp_mod)
+        return self.get_ability_modifier(self.wisdom + self.wis_temp_mod + self.get_equipment_bonus('Wisdom'))
     
     def get_cha_modifier(self):
         """Get Charisma modifier"""
-        return self.get_ability_modifier(self.charisma + self.cha_temp_mod)
+        return self.get_ability_modifier(self.charisma + self.cha_temp_mod + self.get_equipment_bonus('Charisma'))
     
     def has_feat(self, feat_name):
         """Check if character has a specific feat (case-insensitive)"""

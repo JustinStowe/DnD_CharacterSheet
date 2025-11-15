@@ -512,3 +512,40 @@ def test_mark_modified(dummy_gui):
     assert dummy_gui.is_modified
     assert called["title"]
 
+
+def test_magic_item_dialog_integration(monkeypatch, dummy_gui):
+    # Arrange
+    from gui_tabs import MagicItemsTab
+    mt = MagicItemsTab(dummy_gui.root, dummy_gui)
+    mt.build()
+    dummy_gui.character.magic_items = []
+
+    class FakeMagicItemDialog:
+        def __init__(self, parent, character, magic_item=None, item_index=None, on_save=None, gui=None):
+            # Immediately call on_save to simulate user saving the dialog
+            if on_save:
+                mi = {
+                    'name': 'Test Item',
+                    'type': 'Other',
+                    'slot': 'None',
+                    'bonuses': [],
+                    'charges': 0,
+                    'max_charges': 0,
+                    'properties': '',
+                    'description': '',
+                    'equipped': False
+                }
+                on_save(mi, item_index)
+
+    import sys
+    mitc = sys.modules.get(mt.__class__.__module__)
+    assert mitc is not None
+    monkeypatch.setattr(mitc, 'MagicItemDialog', FakeMagicItemDialog)
+
+    # Act
+    mt.show_create_magic_item_dialog()
+
+    # Assert
+    assert len(dummy_gui.character.magic_items) == 1
+    assert dummy_gui.character.magic_items[0]['name'] == 'Test Item'
+
