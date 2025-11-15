@@ -24,6 +24,7 @@ from character_parts.equipment import EquipmentManager
 from character_parts.abilities import AbilityManager
 from character_parts.saves import SaveManager
 from character_parts.ac import ACManager
+from character_parts.leveling import LevelManager
 
 # D&D 3e Class definitions
 CLASS_DEFINITIONS = {
@@ -579,6 +580,8 @@ class Character:
         self.save_manager = SaveManager(self)
         # AC manager
         self.ac_manager = ACManager(self)
+        # Leveling manager
+        self.level_manager = LevelManager(self)
     
     def get_equipment_bonus(self, bonus_type):
         """Compatibility wrapper: delegate to equipment manager."""
@@ -795,122 +798,14 @@ class Character:
         return total_save
     
     def sync_hit_dice_with_levels(self):
-        """Ensure hit_dice list matches total character level"""
-        # First, convert old formats to new format (tuple) if needed
-        converted_dice = []
-        for hit_die_data in self.hit_dice:
-            if isinstance(hit_die_data, tuple) and len(hit_die_data) == 2:
-                # New format: (die_size, hp_roll)
-                converted_dice.append(hit_die_data)
-            elif isinstance(hit_die_data, dict):
-                # Dict format: might have keys like 'die', 'roll', etc.
-                die_size = hit_die_data.get('die', hit_die_data.get('die_size', 10))
-                hp_roll = hit_die_data.get('roll', hit_die_data.get('hp_roll', (die_size // 2) + 1))
-                converted_dice.append((die_size, hp_roll))
-            elif isinstance(hit_die_data, (int, float)):
-                # Old format: just die size, assume average roll
-                die_size = int(hit_die_data)
-                avg_hp = (die_size // 2) + 1
-                converted_dice.append((die_size, avg_hp))
-            else:
-                # Unknown format, use default d10 with average
-                converted_dice.append((10, 6))
-        self.hit_dice = converted_dice
-        
-        total_level = self.get_total_level()
-        current_dice_count = len(self.hit_dice)
-        
-        if current_dice_count < total_level:
-            # Need to add hit dice (leveling up)
-            # Get the primary class hit die
-            class_info = self.get_class_info()
-            hit_die = class_info.get('hit_die', 10)
-            
-            # Add missing hit dice with average HP
-            for _ in range(total_level - current_dice_count):
-                avg_hp = (hit_die // 2) + 1
-                self.hit_dice.append((hit_die, avg_hp))
-        
-        elif current_dice_count > total_level:
-            # Need to remove hit dice (deleveling)
-            self.hit_dice = self.hit_dice[:total_level]
+        # Delegate to the LevelManager
+        return self.level_manager.sync_hit_dice_with_levels()
     
     def recalculate_hp(self):
-        """Recalculate max HP based on hit dice and CON modifier"""
-        total_hp = 0
-        con_mod = self.get_con_modifier()
-        
-        # Calculate HP from hit dice
-        for level_num, hit_die_data in enumerate(self.hit_dice, start=1):
-            # Handle multiple formats: tuple, dict, or int
-            if isinstance(hit_die_data, tuple) and len(hit_die_data) == 2:
-                die_size, hp_roll = hit_die_data
-            elif isinstance(hit_die_data, dict):
-                die_size = hit_die_data.get('die', hit_die_data.get('die_size', 10))
-                hp_roll = hit_die_data.get('roll', hit_die_data.get('hp_roll', (die_size // 2) + 1))
-            elif isinstance(hit_die_data, (int, float)):
-                # Old format: just the die size, use average
-                die_size = int(hit_die_data)
-                hp_roll = (die_size // 2) + 1
-            else:
-                # Unknown format, use default
-                die_size = 10
-                hp_roll = 6
-            
-            if level_num == 1:
-                # First level: max die + CON mod, minimum 1
-                total_hp += max(1, die_size + con_mod)
-            else:
-                # Subsequent levels: roll + CON mod, minimum 1
-                total_hp += max(1, hp_roll + con_mod)
-        
-        # Update max HP
-        old_max = self.max_hp
-        self.max_hp = total_hp
-        
-        # Adjust current HP proportionally if it was at max
-        if old_max > 0 and self.current_hp >= old_max:
-            self.current_hp = self.max_hp
-        elif self.current_hp > self.max_hp:
-            self.current_hp = self.max_hp
+        return self.level_manager.recalculate_hp()
     
     def recalculate_skill_points(self):
-        """Recalculate total skill points available based on all class levels"""
-        # Calculate total skill points from all levels
-        total_points = 0
-        current_level = 0
-        
-        # Iterate through each class and their levels
-        for class_info in self.classes:
-            class_name = class_info['name']
-            class_level = class_info['level']
-            
-            # Get class definition
-            if class_name in CLASS_DEFINITIONS:
-                class_def = CLASS_DEFINITIONS[class_name]
-            elif is_prestige_class(class_name):
-                class_def = PRESTIGE_CLASS_DEFINITIONS.get(class_name, CLASS_DEFINITIONS['Fighter'])
-            else:
-                class_def = CLASS_DEFINITIONS['Fighter']
-            
-            base_skill_points = class_def.get('skill_points', 2)
-            int_mod = self.get_int_modifier()
-            points_per_level = max(1, base_skill_points + int_mod)
-            
-            # Add skill points for each level in this class
-            for level in range(class_level):
-                current_level += 1
-                if current_level == 1:
-                    # First character level gets 4x skill points
-                    total_points += points_per_level * 4
-                else:
-                    total_points += points_per_level
-        
-        # Calculate spent skill points
-        spent_points = sum(self.skills.values())
-        
-        # Update available skill points
-        self.skill_points_available = total_points - spent_points
+        return self.level_manager.recalculate_skill_points()
     
     def update_class_based_stats(self):
         """Update BAB and saves based on current classes and levels"""
@@ -952,50 +847,7 @@ class Character:
         Returns:
             dict with level-up information
         """
-        import random
-        
-        self.level += 1
-        
-        # Determine HP gain
-        class_info = self.get_class_info()
-        hit_die = class_info['hit_die']
-        
-        if hp_roll is None:
-            # Use average (half hit die + 1, rounded down)
-            hp_gain = (hit_die // 2) + 1
-        else:
-            hp_gain = max(1, hp_roll)  # Minimum 1 HP per level
-        
-        # Add CON modifier
-        hp_gain += self.get_con_modifier()
-        hp_gain = max(1, hp_gain)  # Minimum 1 HP per level even with negative CON
-        
-        self.max_hp += hp_gain
-        self.current_hp = self.max_hp  # Heal to full on level up
-        self.hit_dice.append((hit_die, hp_roll if hp_roll else hp_gain))
-        
-        # Update class-based stats
-        self.update_class_based_stats()
-        
-        # Grant skill points
-        skill_points = self.get_skill_points_per_level()
-        if self.level == 1:
-            skill_points *= 4  # First level gives 4x skill points
-        self.skill_points_available += skill_points
-        
-        # Update XP threshold for next level
-        self.next_level_xp = self.level * 1000
-        
-        return {
-            'new_level': self.level,
-            'hp_gain': hp_gain,
-            'hit_die': hit_die,
-            'skill_points': skill_points,
-            'bab': self.base_attack_bonus,
-            'fort': self.fort_base,
-            'ref': self.ref_base,
-            'will': self.will_base
-        }
+        return self.level_manager.level_up(hp_roll)
     
     def get_melee_attack_bonus(self):
         """Calculate melee attack bonus"""
