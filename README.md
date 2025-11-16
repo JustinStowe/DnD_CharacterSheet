@@ -1,74 +1,283 @@
+<!-- PROJECT SHIELDS -->
+<!-- Using placeholder shields - update links if you use CI / badges -->
+
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![License][license-shield]][license-url]
+
 # D&D 3rd Edition Character Sheet
 
-An interactive character sheet application for Dungeons & Dragons 3rd Edition that automatically updates all derived statistics when you change base values. Includes **full Epic Level Handbook support** for characters level 21+!
+An interactive character sheet application that automatically updates derived stats and supports epic levels, prestige classes, spells, and more.
 
-## Features
+     - View total character level
 
-- **Class-based character system**: Choose from 11 D&D 3e core classes with automatic stat adjustments
-  - Fighter, Barbarian, Ranger, Paladin (martial classes)
-  - Cleric, Druid (Wisdom-based casters)
-  - Wizard (Intelligence-based caster)
-  - Sorcerer, Bard (Charisma-based casters)
-  - Monk, Rogue (skill specialists)
-- **Prestige class support**: 70 prestige classes with automatic requirement checking
-  - 11 Core DMG prestige classes: Arcane Archer, Arcane Trickster, Assassin, Blackguard, Dragon Disciple, Duelist, Dwarven Defender, Eldritch Knight, Horizon Walker, Loremaster, Mystic Theurge, Shadowdancer
-  - 19 Magic of Faerûn prestige classes: Harper Scout, Spellsword, Red Wizard, Guild Thief, Shadow Adept, and 14 more!
-  - 12 Tome and Blood prestige classes: Bladesinger, Pale Master, Alienist, Blood Magus, Geomancer, and 7 more!
-  - 14 Sword and Fist prestige classes: Cavalier, Kensai, Drunken Master, Frenzied Berserker, and 10 more!
-  - 14 Song and Silence prestige classes: Battle Dancer, Master of Masks, Lyric Thaumaturge, Thief-Acrobat, and 10 more!
-  - Requirements displayed when adding prestige classes
-  - Validates race, alignment, BAB, skills, and other prerequisites
-  - Full integration with multiclass system
-- **Epic Level Handbook support** (Level 21+): Full implementation of epic level rules
-  - **Epic BAB and Saves**: Continues progression beyond 20th level
-    - Full BAB: +1 per level
-    - Medium BAB: +1 every 2 levels
-    - Poor BAB: +1 every 2 levels
-    - Good saves: +1 every 2 levels
-    - Poor saves: +1 every 3 levels
-  - **Epic Feats**: Gain epic feats at 21st level, then every 2 levels
-    - 53 epic feats defined with full prerequisites
-    - Epic Prowess, Epic Toughness, Epic Weapon Focus/Specialization
-    - Great Ability Score increases (Strength, Dexterity, etc.)
-    - Epic Spellcasting, Improved Combat Reflexes, and more
-    - Epic feat selection dialog with descriptions
-  - **Epic Ability Increases**: +1 to any ability score every 4 levels (24, 28, 32...)
-  - **Epic XP Progression**: Proper XP requirements for epic levels
-  - **Works with multiclass**: All epic progressions work with multiclass characters
-- **Multiclass support**: Take levels in multiple classes with proper D&D 3e stacking rules
-  - BAB stacks from all classes based on their progressions (including epic levels)
-  - Saving throws stack from all classes based on their progressions (including epic levels)
-  - Track individual class levels separately
-  - Choose which class to level when gaining levels
-  - Mix base classes, prestige classes, and epic levels freely
-- **Character advancement**: Level up with automatic BAB, save, HP, and skill point calculations
-  - Level up dialog shows epic feat and ability increase notifications
-  - Automatic detection when reaching epic level (21+)
-- **Auto-calculating stats**: Change your stat score and watch your saves update automatically
-- **Complete character tracking**:
-  - All six ability scores (STR, DEX, CON, INT, WIS, CHA)
-  - Saving throws (Fortitude, Reflex, Will) - auto-calculated from class (including epic bonuses)
-  - Base Attack Bonus - auto-calculated from class and level
-  - Armor Class (including touch and flat-footed)
-  - Combat stats (Initiative, Attack bonuses)
-  - All D&D 3e skills with proper ability modifiers
-  - **Automatic skill point tracking** - points deducted as you allocate ranks
-  - Experience points and level tracking
-  - **Weapon statistics** - complete D&D 3e weapon details with auto-calculated attack/damage
-  - **Inventory tracking with weight and carrying capacity**
-  - **Spell tracking with spell slots and prepared spells**
-  - **Magic item tracking with equipment bonuses** - create items with stat bonuses that automatically apply when equipped
-  - **Feat and special ability tracking**
-- **Spellcasting support**: Automatic spellcasting ability assignment based on class
-  - Clerics, Druids, Paladins, Rangers use Wisdom
-  - Wizards use Intelligence
-  - Sorcerers and Bards use Charisma
-  - Spell DCs calculated automatically from the correct ability
-- **Temporary modifiers**: Track temporary ability score changes
-- **Encumbrance system**: Automatic carrying capacity calculations based on Strength
-- **Feats & Abilities**: Track feats, racial abilities, class features, and daily use abilities
-- **Save/Load characters**: Save your character to a file and load it later
-- **Easy-to-use GUI**: Clean tabbed interface built with tkinter
+- Automatically sets BAB progression, save progressions, hit die, and spellcasting ability
+- **Multiclass BAB & Saves**: Stack correctly according to D&D 3e rules
+  - Fighter 5: BAB +5, Fort +4, Ref +1, Will +1
+  - Wizard 3: BAB +1, Fort +1, Ref +1, Will +3
+  - Duelist 2: BAB +2, Fort +0, Ref +3, Will +0
+  - Combined Fighter 5/Wizard 3/Duelist 2: BAB +8, Fort +5, Ref +5, Will +4
+
+2. **Level & Experience**: Track your character's progression
+   - XP tracking with next level threshold display
+   - **Level Up Button**: Opens dialog to advance your character
+     - Choose which class to level (for multiclass characters)
+     - Roll or use average for HP gain (based on selected class's hit die)
+     - Automatically updates BAB, saves, and grants skill points
+     - Preview shows all changes before confirming
+3. **Ability Scores**: Enter your ability scores (STR, DEX, CON, INT, WIS, CHA)
+   - The modifier is calculated automatically
+   - Use "Temp" fields for temporary bonuses/penalties
+4. **Saving Throws**: Base saves auto-calculate from class and level
+   - For multiclass characters, saves stack from all classes
+   - Ability modifiers are added automatically
+   - Add misc bonuses from feats, items, etc.
+5. **Armor Class**: Enter armor, shield, and other AC bonuses
+   - DEX modifier is applied automatically
+   - Touch AC and Flat-footed AC are calculated for you
+6. **Combat**: Base Attack Bonus auto-calculates from class and level
+   - For multiclass characters, BAB stacks from all classes
+   - Melee attack (BAB + STR) is calculated automatically
+   - Ranged attack (BAB + DEX) is calculated automatically
+
+### Skills Tab
+
+- **Skill Points**: Display shows available unspent skill points
+  - First level: (Class skill points + INT mod) × 4
+  - Each additional level: Class skill points + INT mod (minimum 1)
+  - **Automatic Point Tracking**: When you assign ranks to a skill, points are automatically deducted
+  - **Spent Points Display**: Shows total skill points spent
+  - **Validation**: Prevents spending more points than available
+
+### Inventory Tab
+
+- Track all your equipment
+  - Add items with weight, quantity, and notes
+  - Add containers: check "Is Container" and specify a capacity (lbs)
+    - Container items include a combined "Inside / Capacity" column to show the total weight of the contents and the capacity
+    - Use the "Manage Contents" dialog to add, edit, or remove items stored inside a container
+    - Toggle whether a container's contents count toward the character's carried weight ("Count Contents Toward Carry")
+    - Capacity validation prevents adding items that would exceed a container's capacity
+  - **Double-click to edit items** - modify name, weight, quantity, or notes
+  - Carrying capacity auto-calculates based on STR
+  - Color-coded load indicator (Light/Medium/Heavy/Overloaded)
+  - Shows encumbrance penalties (Max DEX, Check Penalty, Speed Reduction)
+
+### Spells Tab
+
+- **Spellcasting Ability**: Automatically set based on class
+  - Can be manually changed if needed
+  - Spell save DCs auto-calculate for each spell level based on correct ability
+  - Range Definitions: Close: 25 ft + 5 ft/2 levels; Medium: 100 ft + 10 ft/level; Long: 400 ft + 40 ft/level
+  - Updates automatically as character level changes
+- **Spell Level Organization**: Spells organized in sub-tabs by spell level (0-9), sortable and searchable
+
+### Feats & Abilities
+
+- **Feats Section**: Add feats with name, type, prerequisites, and benefit
+  - Types: General, Metamagic, Item Creation, Combat, Skill, Special
+  - Full text descriptions for benefits
+- **Epic Feats Button** (Level 21+): Access epic feats for epic level characters; the progressions and checks are applied automatically
+
+### Magic Items Tab
+
+- **Create Magic Items**: Comprehensive item creation dialog
+  - Name, type, slot, caster level, and charge tracking
+  - **Abilities per Item**: Items can have multiple named abilities (name, cost, description). Using a charge prompts selection and deducts the correct cost.
+  - Stat bonuses, properties, description field
+  - Set max charges and manage usage/ recharge
+
+### Weapons (Main Tab)
+
+- Comprehensive weapon tracking and calculation of attack & damage; supports weapon properties, critical ranges, and special notes
+
+### Save/Load
+
+Use File menu or keyboard shortcuts (Ctrl+N, Ctrl+O, Ctrl+S, Ctrl+Shift+S). Characters are stored as JSON files for easy sharing.
+
+### Examples
+
+- For examples, see `sample_character.json`, `sorcerer_sample.json`, and `cleric_sample.json` in the repository.
+
+## Developer Notes & Project Structure
+
+- `character.py` is the top-level Character class; project logic is split into `character_parts/` manager modules (e.g., `feats`, `spells`, `equipment`, `leveling`, `ac`, `saves`).
+- UI code: `gui_tabs/` contains tabs; `dialogs/` contains modals like `MagicItemDialog` and `ManageContents`.
+- Inventory container schema: inventory items may include keys: `is_container`, `capacity_lbs`, `count_contents_toward_carry`, and `contents` (list of items).
+- Magic items store an `abilities` list with objects containing `name`, `cost`, and `description`.
+- Programmatic helpers for containers are available: `add_content_to_container`, `edit_content_in_container`, `remove_content_from_container` in `gui_tabs/inventory_tab.py`.
+
+## Testing
+
+- Run the full test suite using pytest:
+
+```bash
+python -m pytest -q
+```
+
+- GUI tests include `dummy_gui` in `testing_suite/conftest.py` for headless CI-friendly tests.
+- Add unit tests for managers in `testing_suite/` and UI integration tests using the dummy GUI or a real Tk root if available.
+
+## Contributing
+
+See the `Contributing` section toward the bottom for authoring guidelines and a PR checklist.
+
+## What's New (summary)
+
+- Inventory Containers: Bags and containers with internal contents, capacity validation, and an optional toggle to count contents toward carried weight.
+- Magic Item Abilities: Magic items can include multiple named abilities with charge cost and descriptions; using charges prompts ability selection and decrements charges based on ability cost.
+- Manager refactor: The `Character` class delegates to per-concern managers for better modularity.
+- Headless GUI testing: Added a `dummy_gui` fixture for consistent, headless GUI tests.
+
+## Available Files & Notable Paths
+
+- `character_sheet_gui.py`: Main GUI application
+- `character.py`: Character model and delegations to managers
+- `gui_tabs/`: Tabbed GUI code
+- `dialogs/`: Dialog modals
+- `character_parts/`: Manager modules (equipment, feats, spells, leveling, ac, saves, etc.)
+- `testing_suite/`: Unit and UI tests, including `conftest.py` for headless testing
+
+## Supported Classes (core 11)
+
+| Class     | Hit Die | BAB    | Fort | Ref  | Will | Skill Points | Spellcasting |
+| --------- | ------- | ------ | ---- | ---- | ---- | ------------ | ------------ |
+| Fighter   | d10     | Full   | Good | Poor | Poor | 2 + INT      | None         |
+| Barbarian | d12     | Full   | Good | Poor | Poor | 4 + INT      | None         |
+| Ranger    | d8      | Full   | Good | Good | Poor | 6 + INT      | Wisdom       |
+| Paladin   | d10     | Full   | Good | Poor | Poor | 2 + INT      | Wisdom       |
+| Cleric    | d8      | Medium | Good | Poor | Good | 2 + INT      | Wisdom       |
+| Druid     | d8      | Medium | Good | Poor | Good | 4 + INT      | Wisdom       |
+| Monk      | d8      | Medium | Good | Good | Good | 4 + INT      | None         |
+| Rogue     | d6      | Medium | Poor | Good | Poor | 8 + INT      | None         |
+| Bard      | d6      | Medium | Poor | Good | Good | 6 + INT      | Charisma     |
+| Wizard    | d4      | Poor   | Poor | Poor | Good | 2 + INT      | Intelligence |
+| Sorcerer  | d4      | Poor   | Poor | Poor | Good | 2 + INT      | Charisma     |
+
+## Available Prestige Classes
+
+### Core DMG (12 classes)
+
+1. Arcane Archer
+2. Arcane Trickster
+3. Assassin
+4. Blackguard
+5. Dragon Disciple
+6. Duelist
+7. Dwarven Defender
+8. Eldritch Knight
+9. Horizon Walker
+10. Loremaster
+11. Mystic Theurge
+12. Shadowdancer
+
+### Magic of Faerûn (19 classes)
+
+1. Harper Scout
+2. Spellsword
+3. Red Wizard
+4. Guild Thief
+5. Shadow Adept
+6. Arcane Devotee
+7. Divine Champion
+8. Divine Disciple
+9. Harper Priest
+10. Runecaster
+11. Silverstar
+12. Hospitaler
+13. Incantatrix
+14. Acolyte of the Ego
+15. Acolyte of the Skin
+16. Shaaryan Hunter
+17. Monk of the Long Death
+18. Zhentarim Soldier
+19. Zhentarim Spy
+
+### Tome and Blood (12 classes)
+
+1. Abjurer
+2. Alienist
+3. Bladesinger
+4. Blood Magus
+5. Candle Caster
+6. Geomancer
+7. Master Transmogrifist
+8. Pale Master
+9. Ruathar
+10. Seeker of the Song
+11. Void Disciple
+12. Waverider
+
+### Sword and Fist (14 classes)
+
+1. Cavalier
+2. Darkwood Stalker
+3. Drunken Master
+4. Exotic Weapon Master
+5. Frenzied Berserker
+6. Gladiator
+7. Ironguard
+8. Kensai
+9. Monk of the Enabled Hand
+10. Ravager
+11. Reaping Mauler
+12. Stonelord
+13. War Chanter
+14. Wildrunner
+
+### Song and Silence (14 classes)
+
+1. Battle Dancer
+2. Fochlucan Lyrist
+3. Harper Agent
+4. Lyric Thaumaturge
+5. Master of Masks
+6. Metalsmith
+7. Nameless One
+8. Justiciar
+9. Master Specialist
+10. Virtuoso
+11. Vigilante
+12. Fortune's Friend
+13. Thief-Acrobat
+14. Night Singer
+
+## Save/Load
+
+Use File menu or keyboard shortcuts:
+
+- Ctrl+N - New character
+- Ctrl+O - Open/Load character
+- Ctrl+S - Save character
+- Ctrl+Shift+S - Save As
+
+Characters are stored in JSON for easy sharing.
+
+<!-- Contributing details are below. -->
+
+## License
+
+Free to use for personal D&D games.
+
+## Acknowledgments
+
+- Borrowed README layout from the `Best-README-Template` for structure and clarity.
+- Project design follows D&D 3E rules and community conventions.
+
+<!-- MARKDOWN LINKS & IMAGES -->
+
+[contributors-shield]: https://img.shields.io/github/contributors/JustinStowe/DnD_CharacterSheet.svg?style=for-the-badge
+[contributors-url]: https://github.com/JustinStowe/DnD_CharacterSheet/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/JustinStowe/DnD_CharacterSheet.svg?style=for-the-badge
+[forks-url]: https://github.com/JustinStowe/DnD_CharacterSheet/network/members
+[stars-shield]: https://img.shields.io/github/stars/JustinStowe/DnD_CharacterSheet.svg?style=for-the-badge
+[stars-url]: https://github.com/JustinStowe/DnD_CharacterSheet/stargazers
+[issues-shield]: https://img.shields.io/github/issues/JustinStowe/DnD_CharacterSheet.svg?style=for-the-badge
+[issues-url]: https://github.com/JustinStowe/DnD_CharacterSheet/issues
+[license-shield]: https://img.shields.io/github/license/JustinStowe/DnD_CharacterSheet.svg?style=for-the-badge
+[license-url]: https://github.com/JustinStowe/DnD_CharacterSheet/blob/development/LICENSE.txt
 
 ## Requirements
 
@@ -142,7 +351,7 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
    - Melee attack (BAB + STR) is calculated automatically
    - Ranged attack (BAB + DEX) is calculated automatically
 
-#### Skills Tab
+### Skills Tab
 
 - **Skill Points**: Display shows available unspent skill points
   - First level: (Class skill points + INT mod) × 4
@@ -156,16 +365,21 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
   - Points are deducted from available pool as you allocate them
   - Reducing ranks refunds points back to available pool
 
-#### Inventory Tab
+### Inventory Tab
 
 - Track all your equipment
   - Add items with weight, quantity, and notes
+  - Add containers: check "Is Container" and specify a capacity (lbs)
+    - Container items include a combined "Inside / Capacity" column to show the total weight of the contents and the capacity
+    - Use the "Manage Contents" dialog to add, edit, or remove items stored inside a container
+    - Toggle whether a container's contents count toward the character's carried weight ("Count Contents Toward Carry")
+    - Capacity validation prevents adding items that would exceed a container's capacity
   - **Double-click to edit items** - modify name, weight, quantity, or notes
   - Carrying capacity auto-calculates based on STR
   - Color-coded load indicator (Light/Medium/Heavy/Overloaded)
   - Shows encumbrance penalties (Max DEX, Check Penalty, Speed Reduction)
 
-#### Spells Tab
+### Spells Tab
 
 - **Spellcasting Ability**: Automatically set based on class
   - Can be manually changed if needed
@@ -237,11 +451,12 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
   - Use ability button to decrement remaining uses
   - Long Rest button to restore all daily abilities
 
-#### Magic Items Tab
+### Magic Items Tab
 
 - **Create Magic Items**: Powerful dialog-based item creation system
   - **Create New Item Button**: Opens comprehensive magic item creation dialog
   - **Basic Information**: Name, type, slot, caster level, and charge tracking
+  - **Abilities**: Items can define multiple named abilities (name, cost, description) that consume charges when used
   - **Stat Bonuses System**: Add multiple bonuses that affect character stats when equipped
     - **Bonus Types Available**:
       - **Armor Class**: Armor, Shield, Natural Armor, Deflection
@@ -274,6 +489,7 @@ Want to double-click to run without Python installed? See [BUILD_EXECUTABLE.md](
 - **Charge Management**:
   - Set max charges when creating item
   - Use Charge (-1) button to decrement charges
+  - If the item has multiple abilities, the UI asks which ability to use and decrements charges by that ability's cost
   - Recharge button to restore to maximum
   - Displays current/max charges (only shows if item has charges)
 - **Item Management**:
@@ -296,7 +512,7 @@ Creating "Vest of the Archmagi":
 6. Click the Equipped column to equip it
 7. Character immediately gains: +8 AC, +5 to all saves, +2 spell penetration
 
-#### Weapons (Main Tab)
+### Weapons (Main Tab)
 
 - **Comprehensive Weapon Tracking**: Located in Combat section of Main tab
   - **Basic Stats**: Name, Type (Melee/Ranged), Damage dice, Critical range/multiplier
@@ -311,7 +527,7 @@ Creating "Vest of the Archmagi":
   - Updates automatically when ability scores or BAB changes
 - **Weapon Display**: Shows all weapons with complete statistics at a glance
 
-#### Save/Load
+### Save/Load
 
 Use File menu or keyboard shortcuts:
 
@@ -463,6 +679,25 @@ Create a Cleric with WIS 16:
 - `cleric_sample.json` - Example Cleric character (level 3 Human, WIS-based caster)
 - `sorcerer_sample.json` - Example Sorcerer character (level 4 Half-Elf, CHA-based caster)
 - `README.md` - This file
+
+## Developer Notes & Project Structure
+
+- The `Character` model has been refactored to delegate behavior to per-concern managers in `character_parts/` (e.g., `equipment.py`, `feats.py`, `spells.py`, `ac.py`, `saves.py`, `leveling.py`). This helps keep the code modular and easier to maintain.
+- UI and dialogs live in `gui_tabs/` and `dialogs/` respectively. New features such as the `Manage Contents` dialog and the `MagicItemDialog` ability editor are implemented in these directories.
+- Inventory containers are represented by the following fields on an inventory item: `is_container`, `capacity_lbs`, `count_contents_toward_carry`, and `contents` (a list of item dicts). Magic items store an `abilities` list on each item where every ability contains `name`, `cost`, and `description` keys.
+  - Programmatic helper methods: `add_content_to_container(container_item, content_item)`, `edit_content_in_container(container_item, index, new_content)`, and `remove_content_from_container(container_item, index)` are implemented to help manipulate container contents.
+
+## Testing
+
+- The repository uses `pytest` and includes both unit and GUI tests in `testing_suite/`.
+- GUI tests use a `dummy_gui` fixture that patches tkinter when running in headless CI environments. The fixture is defined in `testing_suite/conftest.py` and provides predictable UI objects and a `DummyCharacter` for fast, deterministic tests.
+- Run the full test suite with:
+
+```bash
+python -m pytest -q
+```
+
+If you want to run only the unit tests (excluding GUI/UI test markers), use `-k` to filter test names or paths.
 
 ## Supported Classes
 
@@ -692,3 +927,60 @@ Possible additions:
 - Character portrait/image support
 - Dice roller integration
 - Combat tracker
+
+## Contributing
+
+Thanks for considering contributing! Below are guidelines and conventions to help contributors get set up and make high-quality changes.
+
+### Branches & Workflow
+
+- Create a feature branch off `development` following the format `feature/<short-description>` or `fix/<short-description>`.
+- Keep changes logically grouped and create one PR per set of related changes.
+- Write commit messages that explain the intent and include the related ticket/issue number if you have one.
+
+### Code Layout & Manager Pattern
+
+- The `Character` model delegates domain-specific logic to manager modules in `character_parts/`. Each manager should live in a module named after its concern and provide a concise public API. Examples:
+  - `character_parts/equipment.py` → `EquipmentManager`
+  - `character_parts/spells.py` → `SpellManager`
+  - `character_parts/feats.py` → `FeatManager`
+- When adding a new manager:
+  - Create a file in `character_parts/` that contains the manager class and unit tests that exercise the manager's logic.
+  - Update `character.py` to instantiate and delegate to the manager (preserve the public `Character` API where practical).
+  - Keep logic inside a manager that is cohesive and limited to a single concern.
+
+### UI: Tabs & Dialogs
+
+- UI code lives in `gui_tabs/` and dialogs in `dialogs/`.
+- Dialogs should be implemented as classes using `tk.Toplevel` or a consistent dialog base, avoid tight coupling to the root and prefer dependency injection for testability.
+- For new UI changes:
+  - Create or modify a tab under `gui_tabs/` and the dialog in `dialogs/`.
+  - Add unit tests to `testing_suite/` that exercise logic where possible and UI tests that use the `dummy_gui` fixture for headless validation.
+
+### Tests
+
+- Run unit and UI tests using `pytest`:
+
+```bash
+python -m pytest -q
+```
+
+- The test suite includes `testing_suite/conftest.py`, which provides a `dummy_gui` fixture used to run GUI tests headlessly in CI environments.
+- Add unit tests for new manager logic under `testing_suite/` and UI tests that exercise key flows for tabs and dialogs.
+- Aim for a good mix of unit and integration tests: use unit tests for logic in managers and integration/UI tests for dialog + tab behavior.
+
+### Style & Quality
+
+- The project targets Python 3.14; use modern Python constructs (type hints, f-strings, dataclasses where appropriate).
+- Keep code modular and testable; avoid large monolithic functions or classes.
+- When updating existing behavior, add tests to prevent regressions.
+
+### Release & Changelog
+
+- If your change affects user-visible behavior, add an entry to `CHANGELOG.md` (create one if it doesn't exist) describing the change and the rationale.
+
+### PR Checklist
+
+- Include tests for new functionality or bug fixes.
+- Update the README if adding a user-facing feature.
+- Ensure CI passes before marking PR as ready for review.

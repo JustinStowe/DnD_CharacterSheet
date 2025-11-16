@@ -3,7 +3,7 @@ from gui_tabs import MagicItemsTab
 from dialogs.magic_item_dialog import MagicItemDialog
 
 
-def test_magic_item_dialog_ui_ability_description(dummy_gui):
+def test_magic_item_dialog_ui_ability_description(dummy_gui, monkeypatch):
     gui = dummy_gui
     saved = {}
 
@@ -11,6 +11,8 @@ def test_magic_item_dialog_ui_ability_description(dummy_gui):
         saved['mi'] = mi
 
     # Create and interact with a real dialog to add an ability with description
+    # Monkeypatch grab_set to avoid 'another application has grab' errors in headless tests
+    monkeypatch.setattr(tk.Toplevel, 'grab_set', lambda self: None)
     try:
         dialog = MagicItemDialog(gui.root, gui.character, None, None, on_save, gui)
         # Set ability fields
