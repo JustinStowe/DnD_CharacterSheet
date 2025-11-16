@@ -433,8 +433,22 @@ class InventoryTab(BaseTab):
         self.inventory_tree.column('manage', width=80, anchor='center')
 
         self.inventory_tree.pack(fill='both', expand=True)
+        # Keep a reference to scrollbar so event handlers can access it
+        self.inventory_scrollbar = scrollbar
         # Bind click to support inline manage actions
         self.inventory_tree.bind('<ButtonRelease-1>', self._inventory_tree_click)
+        # Configure the scrollbar to control the treeview
+        self.inventory_scrollbar.config(command=self.inventory_tree.yview)
+        # Bind double-click to edit item
+        self.inventory_tree.bind('<Double-1>', self.edit_inventory_item)
+        # Remove button (placed under the inventory list)
+        remove_frame = ttk.Frame(inventory_frame)
+        remove_frame.pack(fill='x', pady=(5, 0))
+        remove_btn = ttk.Button(
+            remove_frame,
+            text="Remove Selected Item",
+            command=self.remove_inventory_item)
+        remove_btn.pack(side='left', padx=2)
 
     def _inventory_tree_click(self, event):
         # Determine which column was clicked, and if 'manage' clicked and it's a container open the manage dialog
@@ -459,20 +473,6 @@ class InventoryTab(BaseTab):
                         pass
         except Exception:
             pass
-        scrollbar.config(command=self.inventory_tree.yview)
-
-        # Bind double-click to edit item
-        self.inventory_tree.bind('<Double-1>', self.edit_inventory_item)
-
-        # Remove button
-        remove_frame = ttk.Frame(inventory_frame)
-        remove_frame.pack(fill='x', pady=(5, 0))
-
-        remove_btn = ttk.Button(
-            remove_frame,
-            text="Remove Selected Item",
-            command=self.remove_inventory_item)
-        remove_btn.pack(side='left', padx=2)
 
     def add_inventory_item(self):
         """Add an item to the inventory"""
