@@ -487,7 +487,12 @@ class InventoryTab(BaseTab):
             except Exception:
                 capacity = 0.0
             count_contents = bool(self.count_contents_var.get())
-            self.character.add_item(name, weight, quantity, notes, is_container=is_container, capacity_lbs=capacity, count_contents_toward_carry=count_contents, contents=[])
+            try:
+                self.character.add_item(name, weight, quantity, notes, is_container=is_container, capacity_lbs=capacity, count_contents_toward_carry=count_contents, contents=[])
+            except ValueError as e:
+                # Invalid input (e.g., negative capacity) — show error and do not add
+                messagebox.showerror('Invalid Container', str(e))
+                return
 
             # Update display
             self.update_inventory_display()

@@ -961,6 +961,9 @@ class Character:
             'notes': notes
         }
         if is_container:
+            # Validate capacity: negative values are not allowed
+            if float(capacity_lbs or 0) < 0:
+                raise ValueError('Container capacity cannot be negative')
             item['is_container'] = True
             item['capacity_lbs'] = float(capacity_lbs or 0)
             item['count_contents_toward_carry'] = bool(count_contents_toward_carry)

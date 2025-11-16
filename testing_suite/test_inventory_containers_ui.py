@@ -110,10 +110,11 @@ def test_add_container_with_negative_capacity(dummy_gui):
     it.entries['item_quantity'].delete(0, tk.END); it.entries['item_quantity'].insert(0, '1')
     it.entries['item_capacity'].insert(0, '-10')
     it.is_container_var.set(True); it.count_contents_var.set(True)
+    before_len = len(gui.character.inventory)
     it.add_inventory_item()
-    last_item = gui.character.inventory[-1]
-    assert last_item['is_container'] is True
-    assert float(last_item['capacity_lbs']) == -10.0
+    after_len = len(gui.character.inventory)
+    # Item should not be added because negative capacities are not allowed
+    assert after_len == before_len
 
 
 def test_edit_container_manage_contents(dummy_gui):
