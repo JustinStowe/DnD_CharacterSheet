@@ -1,0 +1,1050 @@
+{
+  "name": "Astraea Stowe",
+  "player": "Justin Stowe",
+  "character_class": "Sorcerer",
+  "level": 10,
+  "race": "Elf",
+  "alignment": "Chaotic Good",
+  "deity": "Jord",
+  "size": "Medium",
+  "age": 0,
+  "gender": "Female",
+  "height": "5' 4\"",
+  "weight": "120",
+  "hair_color": "Black",
+  "eye_color": "blue",
+  "classes": [
+    {
+      "name": "Sorcerer",
+      "level": 10
+    }
+  ],
+  "experience": 0,
+  "next_level_xp": 11000,
+  "hit_dice": [
+    [
+      4,
+      3
+    ],
+    [
+      4,
+      3
+    ],
+    [
+      10,
+      4
+    ],
+    [
+      10,
+      4
+    ],
+    [
+      10,
+      4
+    ],
+    [
+      10,
+      4
+    ],
+    [
+      10,
+      4
+    ],
+    [
+      10,
+      4
+    ],
+    [
+      10,
+      4
+    ],
+    [
+      10,
+      4
+    ],
+    {
+      "class": "Sorcerer",
+      "roll": 4,
+      "con_mod": 1
+    }
+  ],
+  "strength": 14,
+  "dexterity": 20,
+  "constitution": 12,
+  "intelligence": 18,
+  "wisdom": 12,
+  "charisma": 28,
+  "str_temp_mod": 0,
+  "dex_temp_mod": 0,
+  "con_temp_mod": 0,
+  "int_temp_mod": 0,
+  "wis_temp_mod": 0,
+  "cha_temp_mod": 0,
+  "max_hp": 54,
+  "current_hp": 54,
+  "skill_points_available": 0,
+  "armor_bonus": 0,
+  "shield_bonus": 0,
+  "natural_armor": 0,
+  "deflection_bonus": 0,
+  "misc_ac_bonus": 0,
+  "fort_base": 3,
+  "ref_base": 3,
+  "will_base": 7,
+  "fort_misc": 0,
+  "ref_misc": 0,
+  "will_misc": 0,
+  "base_attack_bonus": 5,
+  "initiative_misc": 0,
+  "spell_resistance": 0,
+  "skills": {
+    "Alchemy": 0,
+    "Animal Empathy": 0,
+    "Appraise": 4,
+    "Balance": 0,
+    "Bluff": 0,
+    "Climb": 0,
+    "Concentration": 14,
+    "Craft": 0,
+    "Decipher Script": 2,
+    "Diplomacy": 8,
+    "Disable Device": 4,
+    "Disguise": 0,
+    "Escape Artist": 0,
+    "Forgery": 0,
+    "Gather Information": 0,
+    "Handle Animal": 0,
+    "Heal": 6,
+    "Hide": 0,
+    "Innuendo": 0,
+    "Intimidate": 0,
+    "Jump": 0,
+    "Knowledge (Arcana)": 14,
+    "Knowledge (Religion)": 4,
+    "Knowledge (Nature)": 0,
+    "Knowledge (Planes)": 9,
+    "Knowledge (Engineering)": 0,
+    "Knowledge (Nobility & Royalty)": 0,
+    "Knowledge (___________)": 0,
+    "Listen": 0,
+    "Move Silently": 0,
+    "Open Lock": 0,
+    "Perform": 5,
+    "Profession": 0,
+    "Ride": 0,
+    "Search": 0,
+    "Sense Motive": 0,
+    "Sleight of Hand": 0,
+    "Spellcraft": 14,
+    "Spot": 0,
+    "Survival": 0,
+    "Swim": 0,
+    "Tumble": 0,
+    "Use Magic Device": 0,
+    "Use Rope": 0,
+    "Wilderness Lore": 0
+  },
+  "skill_misc": {
+    "Alchemy": 0,
+    "Animal Empathy": 0,
+    "Appraise": 0,
+    "Balance": 0,
+    "Bluff": 0,
+    "Climb": 0,
+    "Concentration": 0,
+    "Craft": 0,
+    "Decipher Script": 0,
+    "Diplomacy": 0,
+    "Disable Device": 0,
+    "Disguise": 0,
+    "Escape Artist": 0,
+    "Forgery": 0,
+    "Gather Information": 0,
+    "Handle Animal": 0,
+    "Heal": 0,
+    "Hide": 0,
+    "Innuendo": 0,
+    "Intimidate": 0,
+    "Jump": 0,
+    "Knowledge (Arcana)": 0,
+    "Knowledge (Religion)": 0,
+    "Knowledge (Nature)": 0,
+    "Knowledge (Planes)": 0,
+    "Knowledge (Engineering)": 0,
+    "Knowledge (Nobility & Royalty)": 0,
+    "Knowledge (___________)": 0,
+    "Listen": 0,
+    "Move Silently": 0,
+    "Open Lock": 0,
+    "Perform": 0,
+    "Profession": 0,
+    "Ride": 0,
+    "Search": 0,
+    "Sense Motive": 0,
+    "Sleight of Hand": 0,
+    "Spellcraft": 0,
+    "Spot": 0,
+    "Survival": 0,
+    "Swim": 0,
+    "Tumble": 0,
+    "Use Magic Device": 0,
+    "Use Rope": 0,
+    "Wilderness Lore": 0
+  },
+  "inventory": [
+    {
+      "name": "Holy Symbol",
+      "weight": 0.0,
+      "quantity": 1,
+      "notes": "",
+      "contents": []
+    },
+    {
+      "name": "Ring of Holding",
+      "weight": 0.0,
+      "quantity": 1,
+      "notes": "capacity: 2,000lbs 300ft cubed",
+      "is_container": true,
+      "capacity_lbs": 2000.0,
+      "count_contents_toward_carry": false,
+      "contents": [
+        {
+          "name": "WaterSkin",
+          "weight": 4.0,
+          "quantity": 3,
+          "notes": "Full of fresh Water"
+        },
+        {
+          "name": "BedRoll",
+          "weight": 5.0,
+          "quantity": 1,
+          "notes": ""
+        },
+        {
+          "name": "Signet Ring",
+          "weight": 0.0,
+          "quantity": 1,
+          "notes": ""
+        },
+        {
+          "name": "Sealing Wax",
+          "weight": 1.0,
+          "quantity": 1,
+          "notes": ""
+        },
+        {
+          "name": "Gothic Black Dress & pumps",
+          "weight": 5.0,
+          "quantity": 1,
+          "notes": "Matching set of clothes"
+        },
+        {
+          "name": "Evening Gown and heels",
+          "weight": 5.0,
+          "quantity": 1,
+          "notes": "High class formal wear"
+        },
+        {
+          "name": "Diplomatic Passport",
+          "weight": 0.0,
+          "quantity": 1,
+          "notes": "Soul bound to me"
+        },
+        {
+          "name": "Wu-Jen Spell list",
+          "weight": 0.0,
+          "quantity": 1,
+          "notes": "Has all spells for Wu-jen"
+        },
+        {
+          "name": "Tank Top, Shorts, & boots",
+          "weight": 5.0,
+          "quantity": 1,
+          "notes": "Gothic Casual wear"
+        }
+      ]
+    },
+    {
+      "name": "portable dimension",
+      "weight": 0.0,
+      "quantity": 1,
+      "notes": "100 X 100 grows 10 X 10 per year",
+      "is_container": true,
+      "capacity_lbs": 0.0,
+      "count_contents_toward_carry": false,
+      "contents": [
+        {
+          "name": "10' Ladder",
+          "weight": 20.0,
+          "quantity": 2,
+          "notes": ""
+        },
+        {
+          "name": "Chain 10ft",
+          "weight": 2.0,
+          "quantity": 3,
+          "notes": ""
+        },
+        {
+          "name": "Crowbar",
+          "weight": 5.0,
+          "quantity": 1,
+          "notes": ""
+        },
+        {
+          "name": "Grappling hook",
+          "weight": 4.0,
+          "quantity": 1,
+          "notes": ""
+        },
+        {
+          "name": "Hammer",
+          "weight": 2.0,
+          "quantity": 1,
+          "notes": ""
+        },
+        {
+          "name": "Chest",
+          "weight": 25.0,
+          "quantity": 1,
+          "notes": "Empty"
+        },
+        {
+          "name": "Amazing Lock",
+          "weight": 1.0,
+          "quantity": 2,
+          "notes": ""
+        },
+        {
+          "name": "masterwork manacles",
+          "weight": 2.0,
+          "quantity": 5,
+          "notes": "(handcuffs)"
+        },
+        {
+          "name": "Cooking pot & pan",
+          "weight": 10.0,
+          "quantity": 1,
+          "notes": ""
+        },
+        {
+          "name": "Bag of holding size 4",
+          "weight": 0.0,
+          "quantity": 1,
+          "notes": "Can only contain cooking items"
+        },
+        {
+          "name": "Heal potions",
+          "weight": 1.0,
+          "quantity": 80,
+          "notes": "Heals 10 hp each"
+        },
+        {
+          "name": "Strong acid potions",
+          "weight": 1.0,
+          "quantity": 101,
+          "notes": ""
+        },
+        {
+          "name": "Angelic Reprieve",
+          "weight": 1.0,
+          "quantity": 23,
+          "notes": "Equals a full nights rest"
+        },
+        {
+          "name": "Cure moderate wounds",
+          "weight": 5.0,
+          "quantity": 20,
+          "notes": "Heals 2D8+5 hitpoints"
+        },
+        {
+          "name": "Flask of acid",
+          "weight": 2.0,
+          "quantity": 13,
+          "notes": ""
+        },
+        {
+          "name": "Magic Recharge potion",
+          "weight": 1.0,
+          "quantity": 26,
+          "notes": "Fully recharges item, restores 1 charge for epic items"
+        },
+        {
+          "name": "potion of jump",
+          "weight": 1.0,
+          "quantity": 1,
+          "notes": ""
+        },
+        {
+          "name": "potion of sneak",
+          "weight": 1.0,
+          "quantity": 1,
+          "notes": ""
+        },
+        {
+          "name": "Alchemist fire",
+          "weight": 1.0,
+          "quantity": 10,
+          "notes": ""
+        },
+        {
+          "name": "Antitoxin",
+          "weight": 4.0,
+          "quantity": 10,
+          "notes": "4 doses to a potion"
+        },
+        {
+          "name": "Crystal Wash",
+          "weight": 1.0,
+          "quantity": 1,
+          "notes": "Each dose cleans upto 4 square yards"
+        },
+        {
+          "name": "Crossbow bolts",
+          "weight": 0.0,
+          "quantity": 45,
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "name": "Tank Top, Shorts, & Boots",
+      "weight": 0.0,
+      "quantity": 1,
+      "notes": "In Ring"
+    },
+    {
+      "name": "Staff of the Hierophants",
+      "weight": 4.0,
+      "quantity": 1,
+      "notes": "",
+      "contents": []
+    }
+  ],
+  "currency": {
+    "platinum": 0,
+    "gold": 147191,
+    "silver": 0,
+    "copper": 0
+  },
+  "spellcasting_ability": "charisma",
+  "spell_slots_max": {
+    "0": 6,
+    "1": 9,
+    "2": 9,
+    "3": 9,
+    "4": 8,
+    "5": 5,
+    "6": 0,
+    "7": 0,
+    "8": 0,
+    "9": 0,
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 0,
+    "7": 0,
+    "8": 0,
+    "9": 0
+  },
+  "spell_slots_used": {
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 0,
+    "7": 0,
+    "8": 0,
+    "9": 0,
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 0,
+    "7": 0,
+    "8": 0,
+    "9": 0
+  },
+  "spells": [
+    {
+      "name": "Arcane Mark",
+      "level": 0,
+      "school": "Universal",
+      "casting_time": "1 action",
+      "range": "Touch",
+      "duration": "Permanent",
+      "components": "V, S",
+      "prepared": false,
+      "reference": "Player's Handbook Pg 201",
+      "description": "Inscribes a permenant personal rune on an object, can be visible or invisible. If invisible, others are able to see it with detect magic. If cast on a living thing, the rune will wear off in 6 months."
+    },
+    {
+      "name": "Create Water",
+      "level": 0,
+      "school": "Conjuration",
+      "casting_time": "1 action",
+      "range": "Close",
+      "duration": "Instantaneous",
+      "components": "V,S",
+      "prepared": false,
+      "reference": "Player's Handbook Pg 215",
+      "description": "Creates 2 Gallons/ level of pure water"
+    },
+    {
+      "name": "Clean",
+      "level": 0,
+      "school": "Abjuration",
+      "casting_time": "1 Action",
+      "range": "25 ft",
+      "components": "V,S",
+      "duration": "Instantaneous",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "Removes dirt, mud, and heavy soil from the target/area of upto 4 square yards",
+      "reference": "none",
+      "prepared": false
+    },
+    {
+      "name": "Detect Magic",
+      "level": 0,
+      "school": "Divination",
+      "casting_time": "1 action",
+      "range": "60 feet",
+      "components": "V,S",
+      "duration": "Conc. 1 min/ level",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "Detect spells and magic items",
+      "reference": "Players handbook 219",
+      "prepared": false
+    },
+    {
+      "name": "Launch Bolt",
+      "level": 0,
+      "school": "Transmutation",
+      "casting_time": "1 action",
+      "range": "Medium",
+      "components": "V,S",
+      "duration": "Instantaneous",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "Fires a crossbow bolt as if from a light crossbow. Properties of the bolt and any applicable feats apply",
+      "reference": "Magic of Faerun Pg 105",
+      "prepared": false
+    },
+    {
+      "name": "Mage Hand",
+      "level": 0,
+      "school": "Transmutation",
+      "casting_time": "1 action",
+      "range": "Close",
+      "components": "V,S",
+      "duration": "Conc. 1 min/ level",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "Telekinesis of a nonmagical, unattended object weighing up to 5 lbs.",
+      "reference": "Player's Handbook pg 249",
+      "prepared": false
+    },
+    {
+      "name": "Mend",
+      "level": 0,
+      "school": "Transmutation",
+      "casting_time": "1 action",
+      "range": "10 ft",
+      "components": "V,S",
+      "duration": "Instantaneous",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "Makes minor repairs of item",
+      "reference": "Player's handbook pg 253",
+      "prepared": false
+    },
+    {
+      "name": "Prestidigitation",
+      "level": 0,
+      "school": "Universal",
+      "casting_time": "1 action",
+      "range": "10 ft",
+      "components": "V,S",
+      "duration": "1 hour",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "Allows you to perform simple small magical effects for 1 hour",
+      "reference": "Player's Handbook pg 264",
+      "prepared": false
+    },
+    {
+      "name": "Read Magic",
+      "level": 0,
+      "school": "Divination",
+      "casting_time": "1 action",
+      "range": "Personal",
+      "components": "V,S,F",
+      "duration": "10 min/ level",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "Allows you to decipher magical inscriptions",
+      "reference": "Player's Handbook 264",
+      "prepared": false
+    },
+    {
+      "name": "Silent Portal",
+      "level": 0,
+      "school": "Illusion",
+      "casting_time": "1 action",
+      "range": "Close",
+      "components": "S",
+      "duration": "1hr/ level",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "Negates the sound of opening and closing a single portal (door, window, gate, drawer, chest lid, etc) Portals composed of magical energy are not affected",
+      "reference": "",
+      "prepared": false
+    },
+    {
+      "name": "Accuracy",
+      "level": 1,
+      "school": "Transmutation",
+      "casting_time": "1 action",
+      "range": "Touch",
+      "components": "V,S,M",
+      "duration": "10 min / level",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "When you cast this spell, you enhance\none or more thrown weapons or one\nprojectile weapon to improve its chance\nof hitting distant targets. For the duration of the spell, the range increment\nfor the affected weapon or weapons is\ndoubled.\nMaterial Component: Ink used to\nscribe a mystical character on each\nweapon affected by the spell.",
+      "reference": "Complete Arcane pg 96",
+      "prepared": false
+    },
+    {
+      "name": "Arcane Sensitivity",
+      "level": 1,
+      "school": "Divination",
+      "casting_time": "1 action",
+      "range": "touch",
+      "components": "V,S",
+      "duration": "Instantaneous",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "Determines if creature can cast arcane spells and the max spell level it can cast",
+      "reference": "Shining South pg 44",
+      "prepared": false
+    },
+    {
+      "name": "Burning Hands",
+      "level": 1,
+      "school": "Evocation",
+      "casting_time": "1 action",
+      "range": "15 ft",
+      "duration": "Instantaneous",
+      "components": "V,S",
+      "prepared": false,
+      "reference": "Player's handbook pg 207",
+      "description": "A cone of searing flame shoots from your fingertips. Any creature in the area of the flames takes 1D4 points of fire damage per caster level (maximum 5D4). Flammable materials, such as cloth, paper, parchment, and thin wood burn if the flames touch them. A character can extinguish burning items as a full-round action."
+    },
+    {
+      "name": "Comprehend languages",
+      "level": 1,
+      "school": "Divination",
+      "casting_time": "1 action",
+      "range": "self",
+      "components": "V,S,M/DF",
+      "duration": "10 min/ level",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "You can understand the spoken words of creatures or read otherwise incomprehensible written messages. In either case, you must touch the creature or the writing. Written materials can be read at the rate of one page (250 words) per minute. Magical writing cannot be read, though the spell reveals that it is magical, but comprehend languages is often useful when deciphering treasure maps.",
+      "reference": "Player's handbook 212",
+      "prepared": false
+    },
+    {
+      "name": "Acid Fog",
+      "level": 6,
+      "school": "Conjuration",
+      "casting_time": "1 action",
+      "range": "Medium",
+      "components": "V,S,M/DF",
+      "duration": "1 round/ level",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "Acid fog creates a billowing mass of misty vapors simliar to that produced by a solid fog spell (pg 281). In addition to slowing creatures down and obscuring sight, this spell's vapors are highly acidic. Each round on your turn, starting when you cast the spell, the fog deals 2D6 points of acid damage to each creature and object within it.",
+      "reference": "Player's handbook pg 196",
+      "prepared": false
+    },
+    {
+      "name": "Acid Splash",
+      "level": 0,
+      "school": "Conjuration",
+      "casting_time": "1 action",
+      "range": "Close",
+      "components": "V,S",
+      "duration": "Instantaneous",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "You fire a small orb of acid at the target. You must succeed on a ranged touch attack to hit your target. The orb deals 1D3 points of acid damage.",
+      "reference": "Player's handbook pg 196",
+      "prepared": false
+    },
+    {
+      "name": "Aid",
+      "level": 2,
+      "school": "Enchantment",
+      "casting_time": "1 action",
+      "range": "Touch",
+      "components": "V,S, DF",
+      "duration": "1 min/ level",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "Aid grants the target a +1 morale bonus on attack roles and saves against fear effects, plus temporary hitpoints equal to 1D8 + caster level (maximum of 1D8 + 10) temporary hitpoints",
+      "reference": "Player's handbook pg 196",
+      "prepared": false
+    },
+    {
+      "name": "Air walk",
+      "level": 4,
+      "school": "Transmutation",
+      "casting_time": "1 action",
+      "range": "Touch",
+      "components": "V,S,DF",
+      "duration": "10 min/ level",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "The subject can tread on air as if walking on solid ground. Moving upward is similar to walking up hill. The maximum upward or downward angle possible is 45 degrees,  at a rate equal to one-half the air walker's normal speed. A strong wind can (21+ mph) can push the subject along or hold it back.",
+      "reference": "Player's handbook pg 196",
+      "prepared": false
+    },
+    {
+      "name": "Alarm",
+      "level": 1,
+      "school": "Abjuration",
+      "casting_time": "1 action",
+      "range": "Close",
+      "components": "V,S,F/DF",
+      "duration": "2 hours/ level",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "Alarm sounds a mental or audible alarm\neach time a creature of Tiny or larger size\nenters the warded area or touches it. A\ncreature that speaks the password (determined by you at the time of casting) does\nnot set off the alarm. You decide at the\ntime of casting whether the alarm will be\nmental or audible.\nMental Alarm: A mental alarm alerts you\n(and only you) so long as you remain\nwithin 1 mile of the warded area. You note\na single mental \u201cping\u201d that awakens you\nfrom normal sleep but does not otherwise\ndisturb concentration. A silence spell has no\neffect on a mental alarm.\nAudible Alarm: An audible alarm produces the sound of a hand bell, and anyone\nwithin 60 feet of the warded area can hear\nit clearly. Reduce the distance by 10 feet\nfor each interposing closed door and by 20\nfeet for each substantial interposing wall.\nIn quiet conditions, the ringing can be\nheard faintly as far as 180 feet away. The\nsound lasts for 1 round. Creatures within a\nsilence spell cannot hear the ringing.\nEthereal or astral creatures do not trigger the alarm.\nAlarm can be made permanent with a\npermanency spell. \nArcane Focus: A tiny bell and a piece of\nvery fine silver wire",
+      "reference": "Player's handbook pg 197",
+      "prepared": false
+    },
+    {
+      "name": "Alter Self",
+      "level": 2,
+      "school": "Transmutation",
+      "casting_time": "",
+      "range": "Personal",
+      "duration": "10 min. /level",
+      "components": "V,S",
+      "prepared": false,
+      "reference": "Player's handbook pg 197",
+      "description": "You assume the form of a creature of the\nsame type as your normal form (such as\nhumanoid or magical beast). The new form\nmust be within one size category of your\nnormal size. The maximum HD of an\nassumed form is equal to your caster level,\nto a maximum of 5 HD at 5th level. You\ncan change into a member of your own\nkind or even into yourself.\nYou retain your own ability scores. Your\nclass and level, hit points, alignment, base\nattack bonus, and base save bonuses all\nremain the same. You retain all supernatural and spell-like special attacks and qualities of your normal form, except for those\nrequiring a body part that the new form\ndoes not have (such as a mouth for a breath\nweapon or eyes for a gaze attack). You keep\nall extraordinary special attacks and\nqualities derived from class levels (such as\na barbarian\u2019s rage ability), but you lose any\nfrom your normal form that are not\nderived from class levels (such as a\ndragon\u2019s frightful presence ability).\nIf the new form is capable of speech,\nyou can communicate normally. You\nretain any spellcasting ability you had in\nyour original form, but the new form must\nbe able to speak intelligibly (that is, speak a\nlanguage) to use verbal components and\nmust have limbs capable of fine manipulation to use somatic or material components.\nYou acquire the physical qualities of the\nnew form while retaining your own mind.\nPhysical qualities include natural size,\nmundane movement capabilities (such as\nburrowing, climbing, walking, swimming,\nand flight with wings, to a maximum speed\nof 120 feet for flying or 60 feet for\nnonflying movement), natural armor bonus, natural weapons (such as claws,\nbite, and so on), racial skill bonuses, racial\nbonus feats, and any gross physical qualities (presence or absence of wings, number\nof extremities, and so forth). A body with\nextra limbs does not allow you to make\nmore attacks (or more advantageous twoweapon attacks) than normal.\nYou do not gain any extraordinary special attacks or special qualities not noted\nabove under physical qualities, such as\ndarkvision, low-light vision, blindsense,\nblindsight, fast healing, regeneration,\nscent, and so forth.\nYou do not gain any supernatural special\nattacks, special qualities, or spell-like\nabilities of the new form. Your creature\ntype and subtype (if any) remain the same\nregardless of your new form. You cannot\ntake the form of any creature with a template, even if that template doesn\u2019t change\nthe creature type or subtype.\nYou can freely designate the new form\u2019s\nminor physical qualities (such as hair color, hair texture, and skin color) within the\nnormal ranges for a creature of that kind.\nThe new form\u2019s significant physical qualities (such as height, weight, and gender)\nare also under your control, but they must\nfall within the norms for the new form\u2019s\nkind. You are effectively disguised as an\naverage member of the new form\u2019s race. If\nyou use this spell to create a disguise, you\nget a +10 bonus on your Disguise check.\nWhen the change occurs, your equipment, if any, either remains worn or held\nby the new form (if it is capable of wearing\nor holding the item), or melds into the\nnew form and becomes nonfunctional.\nWhen you revert to your true form, any\nobjects previously melded into the new\nform reappear in the same location on your\nbody they previously occupied and are\nonce again functional. Any new items you\nwore in the assumed form and can\u2019t wear\nin your normal form fall off and land at\nyour feet; any that you could wear in either\nform or carry in a body part common to\nboth forms (mouth, hands, or the like) at\nthe time of reversion are still held in the\nsame way. Any part of the body or piece of\nequipment that is separated from the\nwhole reverts to its true form."
+    },
+    {
+      "name": "Analyze Dweomer",
+      "level": 6,
+      "school": "Divination",
+      "casting_time": "1 action",
+      "range": "Close",
+      "components": "V,S,F",
+      "duration": "1 round/ level",
+      "saving_throw": "",
+      "spell_resistance": "",
+      "description": "You discern all spells and magical properties present in a number of creatures or\nobjects. Each round, you may examine a\nsingle creature or object that you can see as\na free action. In the case of a magic item,\nyou learn its functions, how to activate its\nfunctions (if appropriate), and how many\ncharges are left (if it uses charges). In the\ncase of an object or creature with active\nspells cast upon it, you learn each spell, its\neffect, and its caster level.\nAn attended object may attempt a Will\nsave to resist this effect if its holder so\ndesires. If the save succeeds, you learn\nnothing about the object except what you\ncan discern by looking at it. An object that\nmakes its save cannot be affected by any\nother analyze dweomer spells for 24 hours.\nAnalyze dweomer does not function when\nused on an artifact (see the Dungeon\nMaster\u2019s Guide for details on artifacts).\nFocus: A tiny lens of ruby or sapphire set\nin a small golden loop. The gemstone must\nbe worth at least 1,500 gp.",
+      "reference": "Player's handbook pg 198",
+      "prepared": false
+    }
+  ],
+  "feats": [
+    {
+      "name": "Improved Familiar",
+      "type": "General",
+      "description": "",
+      "prerequisites": "Ability to acquire a familiar",
+      "benefit": "You can acquire more powerful familiars."
+    },
+    {
+      "name": "Eschew Materials",
+      "type": "General",
+      "prerequisites": "None",
+      "benefit": "You can cast spells without needing material components, provided the component has no listed cost more than 1Gp.",
+      "description": ""
+    },
+    {
+      "name": "Heighten Spell",
+      "type": "Metamagic",
+      "description": "",
+      "prerequisites": "None",
+      "benefit": "A heightened spell has a higher spell level than normal (up to a maximum of 9th level). Unlike other metamagic feats, Heighten Spell actually changes the effective level of the spell that it modifies."
+    },
+    {
+      "name": "Great Charisma",
+      "type": "Epic",
+      "description": "",
+      "prerequisites": "None",
+      "benefit": "+1 to Charisma"
+    },
+    {
+      "name": "Maximize Spell",
+      "type": "Metamagic",
+      "description": "",
+      "prerequisites": "None",
+      "benefit": "All variable, numeric effects of a spell are maximized. A maximized spell uses up a spell slot three levels higher than the spell's actual level."
+    },
+    {
+      "name": "Energy Substitution",
+      "type": "Metamagic",
+      "description": "",
+      "prerequisites": "Knowledge (arcana) 5 ranks or Knowledge (nature) 5 ranks",
+      "benefit": "Choose one type of energy: acid, cold, electricity, fire, or sonic. You can then modify any spell with an energy descriptor by substituting the spell's normal energy type with the chosen type. An energy substituted spell uses up a spell slot of the same level as the spell's actual level."
+    },
+    {
+      "name": "Spell Penetration",
+      "type": "General",
+      "description": "",
+      "prerequisites": "None",
+      "benefit": "You get a +2 bonus on caster level checks to overcome a creature's spell resistance."
+    },
+    {
+      "name": "Greater Spell Penetration",
+      "type": "General",
+      "description": "",
+      "prerequisites": "Spell Penetration",
+      "benefit": "You get a +2 bonus on caster level checks to overcome a creature's spell resistance. This bonus stacks with the one from Spell Penetration."
+    },
+    {
+      "name": "Leadership",
+      "type": "General",
+      "description": "",
+      "prerequisites": "Character level 6th",
+      "benefit": "You attract loyal companions and devoted followers, subordinates who assist you."
+    },
+    {
+      "name": "Force of Personality",
+      "type": "General",
+      "description": "",
+      "prerequisites": "Cha 13",
+      "benefit": "You add your Charisma modifier instead of your Wisdom modifier to Will saves against mind-affecting spells and abilities."
+    },
+    {
+      "name": "Arcane Mastery",
+      "type": "General",
+      "description": "",
+      "prerequisites": "Ability to cast arcane spells or use spell-like abilities including invocations",
+      "benefit": "You can take 10 on caster level checks as if the caster level check was a skill check."
+    }
+  ],
+  "special_abilities": [
+    {
+      "name": "Mystic Savant",
+      "source": "Other",
+      "description": "You possess an extraordinary affinity for magic, enabling you to understand and wield both arcane and divine spells as if they were your own. You may learn spells from any arcane or divine spell list, disregarding the normal 'spells known' limitations of the sorcerer class. Spells learned in this manner are cast using sorcerer spell slots and your Charisma as your spellcasting ability, seamlessly blending divine inspiration with raw magical talent",
+      "uses_per_day": 0,
+      "uses_remaining": 0
+    },
+    {
+      "name": "Immune to magic sleep",
+      "source": "Racial",
+      "description": "",
+      "uses_per_day": 0,
+      "uses_remaining": 0
+    },
+    {
+      "name": "Low light vision",
+      "source": "Racial",
+      "description": "",
+      "uses_per_day": 0,
+      "uses_remaining": 0
+    },
+    {
+      "name": "+2 to listen",
+      "source": "Racial",
+      "description": "",
+      "uses_per_day": 0,
+      "uses_remaining": 0
+    },
+    {
+      "name": "+2 to search",
+      "source": "Racial",
+      "description": "",
+      "uses_per_day": 0,
+      "uses_remaining": 0
+    },
+    {
+      "name": "+2 to spot",
+      "source": "Racial",
+      "description": "",
+      "uses_per_day": 0,
+      "uses_remaining": 0
+    },
+    {
+      "name": "+2 to saves versus enchantments",
+      "source": "Racial",
+      "description": "",
+      "uses_per_day": 0,
+      "uses_remaining": 0
+    },
+    {
+      "name": "Weapon proficiency: LongSword",
+      "source": "Racial",
+      "description": "",
+      "uses_per_day": 0,
+      "uses_remaining": 0
+    },
+    {
+      "name": "Weapon proficiency: Rapier",
+      "source": "Racial",
+      "description": "",
+      "uses_per_day": 0,
+      "uses_remaining": 0
+    },
+    {
+      "name": "Weapon proficiency: Longbow",
+      "source": "Racial",
+      "description": "",
+      "uses_per_day": 0,
+      "uses_remaining": 0
+    },
+    {
+      "name": "Weapon proficiency: ShortBow",
+      "source": "Racial",
+      "description": "",
+      "uses_per_day": 0,
+      "uses_remaining": 0
+    }
+  ],
+  "weapons": [
+    {
+      "name": "Staff of the Heieophants",
+      "type": "melee",
+      "damage": "1D6",
+      "critical": "20/x2",
+      "range": "5ft",
+      "damage_type": "Bludgeoning",
+      "size": "Medium",
+      "weight": 4.0,
+      "attack_bonus": 0,
+      "misc_attack": 0,
+      "damage_bonus": 0,
+      "notes": "Gnarled, age-darkened walking stick"
+    },
+    {
+      "name": "Masterwork LongSword",
+      "type": "melee",
+      "damage": "1D8",
+      "critical": "19-20/x2",
+      "range": "-",
+      "damage_type": "Slashing",
+      "size": "Medium",
+      "weight": 4.0,
+      "attack_bonus": 0,
+      "misc_attack": 1,
+      "damage_bonus": 0,
+      "notes": "Masterwork quality +1 to hit"
+    }
+  ],
+  "magic_items": [
+    {
+      "name": "Vest of the Arch Magi",
+      "type": "Armor",
+      "slot": "Torso",
+      "caster_level": 20,
+      "charges": 0,
+      "max_charges": 0,
+      "properties": "+2 to overcome spell resistance\nRecall up to lvl 9 spell 3/day\nExpend a spell slot: Heal 5x the spell level",
+      "description": "The vest of the archmagi is legendary. It\nfi lls the dreams of every apprentice sent\nto clean the inkpots and dust the tomes,\nbut rumors of this item are unfounded.\nWhispering in the bunkrooms of the\nAcademy at night, after the oil lamps are\nquenched and curfew has long passed,\neager apprentices claim that a vest of the\narchmagi provides its wearer with continuous defensive bonuses equivalent to\nthe most potent bracers of armor (+8 armor\nbonus to AC) and cloak of resistance (+5 resistance bonus on saving throws).\n It is also said that the vest provides\nits wearer with the continuous ability\nto overcome the magical defenses of her\nenemies (+2 enhancement bonus on caster\nlevel checks made to overcome spell resistance), and that it allows him to recall up\nto three arcane spells that he had previously prepared and cast (as a pearl of power,\nexcept that it can be used for any spell up\nto 9th level and activating it requires only\na swift action).\n Finally, it is suggested, the wearer of\nthe vest of the archmagi could expend a\nprepared arcane spell or spell slot to heal\nhimself of damage equal to five times the level of the spell so expended. This act\nrequires but a moment\u2019s thought (a swift\naction), and can be repeated as often as\ndesired throughout the day.",
+      "bonuses": [
+        {
+          "type": "Armor",
+          "value": 8
+        },
+        {
+          "type": "Resistance (All Saves)",
+          "value": 5
+        }
+      ],
+      "abilities": [],
+      "equipped": true
+    },
+    {
+      "name": "Amulet of Natural Armor",
+      "type": "Wondrous Item",
+      "slot": "Neck",
+      "caster_level": 20,
+      "charges": 0,
+      "max_charges": 0,
+      "properties": "",
+      "description": "",
+      "bonuses": [
+        {
+          "type": "Natural Armor",
+          "value": 9
+        }
+      ],
+      "equipped": true
+    },
+    {
+      "name": "Earring of Freedom of Movement",
+      "type": "Wondrous Item",
+      "slot": "None",
+      "caster_level": 1,
+      "charges": 0,
+      "max_charges": 0,
+      "properties": "Grants waterbreathing\nGrants Freedom of Movement",
+      "description": "",
+      "bonuses": [],
+      "equipped": true
+    },
+    {
+      "name": "Headband of Perfect Excellence",
+      "type": "Wondrous Item",
+      "slot": "Head",
+      "caster_level": 1,
+      "charges": 0,
+      "max_charges": 0,
+      "properties": "",
+      "description": "",
+      "bonuses": [
+        {
+          "type": "Charisma",
+          "value": 6
+        },
+        {
+          "type": "Constitution",
+          "value": 6
+        },
+        {
+          "type": "Dexterity",
+          "value": 6
+        }
+      ],
+      "equipped": true
+    },
+    {
+      "name": "Staff of the Heirophant",
+      "type": "Wondrous Item",
+      "slot": "None",
+      "caster_level": 1,
+      "charges": 0,
+      "max_charges": 0,
+      "properties": "",
+      "description": "",
+      "bonuses": [],
+      "equipped": false
+    }
+  ],
+  "epic_feats": [],
+  "epic_ability_increases": {
+    "strength": 0,
+    "dexterity": 0,
+    "constitution": 0,
+    "intelligence": 0,
+    "wisdom": 0,
+    "charisma": 0
+  }
+}
