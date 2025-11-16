@@ -25,7 +25,9 @@ class InventoryTab(BaseTab):
             new_total = current + (content_item.get('weight', 0) * content_item.get('quantity', 1))
             if new_total > cap:
                 return False
-        container_item.setdefault('contents', []).append(content_item.copy())
+        # normalize the content item schema so nested items are consistent
+        normalized = self._normalize_item_schema(content_item)
+        container_item.setdefault('contents', []).append(normalized)
         return True
 
     def edit_content_in_container(self, container_item, index, new_content):
@@ -41,7 +43,7 @@ class InventoryTab(BaseTab):
             new_total = existing + (new_content.get('weight', 0) * new_content.get('quantity', 1))
             if new_total > cap:
                 return False
-        contents[index] = new_content.copy()
+        contents[index] = self._normalize_item_schema(new_content)
         return True
 
     def remove_content_from_container(self, container_item, index):
@@ -51,6 +53,21 @@ class InventoryTab(BaseTab):
             return False
         contents.pop(index)
         return True
+
+    def _normalize_item_schema(self, item):
+        """Ensure an item dict uses the full item schema used for top-level inventory items.
+        This makes contents items more consistent with top-level items.
+        """
+        return {
+            'name': item.get('name', ''),
+            'weight': item.get('weight', 0.0),
+            'quantity': item.get('quantity', 1),
+            'notes': item.get('notes', ''),
+            'is_container': bool(item.get('is_container', False)),
+            'capacity_lbs': float(item.get('capacity_lbs', 0.0) or 0.0),
+            'count_contents_toward_carry': bool(item.get('count_contents_toward_carry', True)),
+            'contents': item.get('contents', []).copy() if item.get('contents') else []
+        }
 
     def build(self):
         """Build the inventory tab"""
@@ -379,7 +396,9 @@ class InventoryTab(BaseTab):
             add_frame,
             text="Add Item",
             command=self.add_inventory_item)
-        add_btn.grid(row=1, column=4, columnspan=2, padx=2, pady=2)
+        # Move the Add Item button to the right of the container checkboxes (column 7)
+        # Place the Add button to the right of both container checkboxes and align vertically
+        add_btn.grid(row=0, column=7, rowspan=2, columnspan=1, padx=2, pady=2)
 
         # Inventory list with scrollbar
         list_frame = ttk.Frame(inventory_frame)
@@ -510,6 +529,10 @@ class InventoryTab(BaseTab):
         # Get current item data
         current_item = self.character.inventory[index]
         
+        # Create local staged edits workspace for this edit dialog
+        original_contents = current_item.get('contents', []).copy()
+        staged_contents = original_contents.copy()
+
         # Create edit dialog
         dialog = tk.Toplevel(self.root)
         dialog.title("Edit Item")
@@ -563,13 +586,44 @@ class InventoryTab(BaseTab):
         count_contents_cb = ttk.Checkbutton(form_frame, text='Count contents towards carry', variable=count_contents_var)
         count_contents_cb.grid(row=2, column=2, columnspan=2, padx=5)
 
+        # UI indicator for staged changes (appear when staged_contents differs from original_contents)
+        staged_changes_var = tk.StringVar(value='')
+        staged_label = ttk.Label(form_frame, textvariable=staged_changes_var, foreground='orange')
+        staged_label.grid(row=3, column=3, padx=5, sticky='w')
+
+        # Expose references to the staged / original contents and label var so tests can interact
+        self._last_edit_dialog_staged_contents = staged_contents
+        self._last_edit_dialog_original_contents = original_contents
+        self._last_edit_dialog_staged_label_var = staged_changes_var
+
+        def update_staged_indicator():
+            try:
+                self._update_last_edit_dialog_indicator()
+            except Exception:
+                pass
+
         def manage_contents():
             # Open a small dialog to manage contents
-            contents = current_item.get('contents', []) or []
+            contents = staged_contents
+            # Use a temp container wrapper so add/edit/remove act on staged_contents
+            temp_container = {
+                'is_container': True,
+                'capacity_lbs': current_item.get('capacity_lbs', 0),
+                'count_contents_toward_carry': current_item.get('count_contents_toward_carry', True),
+                'contents': staged_contents
+            }
             dlg = tk.Toplevel(self.root)
             dlg.title('Manage Contents')
             dlg.transient(self.root)
-            dlg.grab_set()
+            try:
+                dlg.grab_set()
+            except Exception:
+                # In headless environments or where grabs are not permitted, proceed without modal grab
+                pass
+            try:
+                self._last_manage_dlg = dlg
+            except Exception:
+                pass
 
             cf = ttk.Frame(dlg, padding=10)
             cf.pack(fill='both', expand=True)
@@ -586,15 +640,25 @@ class InventoryTab(BaseTab):
             # Add content controls
             addf = ttk.Frame(cf)
             addf.pack(fill='x', pady=(5,0))
+            try:
+                # expose addf so tests can inspect the add controls
+                self._last_manage_addf = addf
+            except Exception:
+                pass
+            # Column headers for the add content controls
+            ttk.Label(addf, text='Name:').grid(row=0, column=0, padx=2)
+            ttk.Label(addf, text='Weight (lbs):').grid(row=0, column=1, padx=2)
+            ttk.Label(addf, text='Qty:').grid(row=0, column=2, padx=2)
+            ttk.Label(addf, text='Notes:').grid(row=0, column=3, padx=2)
             name_c = ttk.Entry(addf, width=20)
-            name_c.grid(row=0, column=0, padx=2)
+            name_c.grid(row=1, column=0, padx=2)
             weight_c = ttk.Entry(addf, width=8)
-            weight_c.grid(row=0, column=1, padx=2)
+            weight_c.grid(row=1, column=1, padx=2)
             q_c = ttk.Entry(addf, width=8)
             q_c.insert(0, '1')
-            q_c.grid(row=0, column=2, padx=2)
+            q_c.grid(row=1, column=2, padx=2)
             notes_c = ttk.Entry(addf, width=30)
-            notes_c.grid(row=0, column=3, padx=2)
+            notes_c.grid(row=1, column=3, padx=2)
 
             def add_content_item():
                 nm = name_c.get().strip()
@@ -607,8 +671,19 @@ class InventoryTab(BaseTab):
                 except Exception:
                     q = 1
                 nt = notes_c.get().strip()
-                item = {'name': nm, 'weight': wt, 'quantity': q, 'notes': nt}
-                ok = self.add_content_to_container(current_item, item)
+                # Create content item with the same schema as inventory items
+                item = {
+                    'name': nm,
+                    'weight': wt,
+                    'quantity': q,
+                    'notes': nt,
+                    # Defaults so item inside a container mirrors top-level item schema
+                    'is_container': False,
+                    'capacity_lbs': 0.0,
+                    'count_contents_toward_carry': True,
+                    'contents': []
+                }
+                ok = self.add_content_to_container(temp_container, item)
                 if not ok:
                     messagebox.showwarning('Capacity Exceeded', 'Cannot add item: exceeds container capacity.', parent=dlg)
                     return
@@ -619,6 +694,15 @@ class InventoryTab(BaseTab):
                 q_c.delete(0, tk.END)
                 q_c.insert(0, '1')
                 notes_c.delete(0, tk.END)
+                # Mark character modified so it's clear something changed
+                try:
+                    self.mark_modified()
+                except Exception:
+                    pass
+                try:
+                    update_staged_indicator()
+                except Exception:
+                    pass
 
             def remove_content_item():
                 sel = content_tree.selection()
@@ -626,7 +710,16 @@ class InventoryTab(BaseTab):
                     return
                 idx = content_tree.index(sel[0])
                 content_tree.delete(sel[0])
-                self.remove_content_from_container(current_item, idx)
+                removed = self.remove_content_from_container(temp_container, idx)
+                if removed:
+                    try:
+                        self.mark_modified()
+                    except Exception:
+                        pass
+                    try:
+                        update_staged_indicator()
+                    except Exception:
+                        pass
 
             def edit_content_item(_evt=None):
                 sel = content_tree.selection()
@@ -672,37 +765,79 @@ class InventoryTab(BaseTab):
                         if existing + (nw * nq) > cap:
                             messagebox.showwarning('Capacity Exceeded', 'Cannot set description: exceeds container capacity.', parent=ed)
                             return
-                    new = {'name': nn, 'weight': nw, 'quantity': nq, 'notes': notee.get().strip()}
-                    ok = self.edit_content_in_container(current_item, idx, new)
+                        # Preserve any existing metadata on the content if present (for nested containers)
+                        new = {
+                            'name': nn,
+                            'weight': nw,
+                            'quantity': nq,
+                            'notes': notee.get().strip(),
+                            'is_container': c.get('is_container', False),
+                            'capacity_lbs': c.get('capacity_lbs', 0.0),
+                            'count_contents_toward_carry': c.get('count_contents_toward_carry', True),
+                            'contents': c.get('contents', []).copy() if c.get('contents') else []
+                        }
+                    ok = self.edit_content_in_container(temp_container, idx, new)
                     if not ok:
                         messagebox.showwarning('Capacity Exceeded', 'Cannot set values: exceeds container capacity.', parent=ed)
                         return
                     # update tree entry
                     content_tree.item(sel[0], values=(new.get('name',''), f"{new.get('weight',0):.1f}", new.get('quantity',1), new.get('notes','')))
+                    try:
+                        self.mark_modified()
+                    except Exception:
+                        pass
+                    try:
+                        update_staged_indicator()
+                    except Exception:
+                        pass
                     ed.destroy()
 
                 ttk.Button(ef, text='Save', command=save_edit).grid(row=4, column=0)
                 ttk.Button(ef, text='Cancel', command=ed.destroy).grid(row=4, column=1)
                 self.root.wait_window(ed)
 
-            ttk.Button(addf, text='Add', command=add_content_item).grid(row=0, column=4, padx=2)
-            ttk.Button(addf, text='Remove', command=remove_content_item).grid(row=0, column=5, padx=2)
+            ttk.Button(addf, text='Add', command=add_content_item).grid(row=1, column=4, padx=2)
+            ttk.Button(addf, text='Remove', command=remove_content_item).grid(row=1, column=5, padx=2)
             # Bind double-click to edit
             content_tree.bind('<Double-1>', edit_content_item)
 
             def close_dlg():
+                # Commit staged contents into the current_item when closing the Manage Contents dialog
+                current_item['contents'] = staged_contents.copy()
+                try:
+                    self.update_inventory_display()
+                except Exception:
+                    pass
+                try:
+                    self.mark_modified()
+                except Exception:
+                    pass
+                try:
+                    self._last_manage_addf = None
+                    self._last_manage_dlg = None
+                except Exception:
+                    pass
                 dlg.destroy()
 
             btnf = ttk.Frame(cf)
             btnf.pack(fill='x', pady=6)
             ttk.Button(btnf, text='Close', command=close_dlg).pack(side='left')
             self.root.wait_window(dlg)
-            # Save contents back
-            current_item['contents'] = contents
+            # Do NOT save contents back here - they are staged until the main dialog is saved
 
         if current_item.get('is_container'):
             manage_btn = ttk.Button(form_frame, text='Manage Contents', command=manage_contents)
             manage_btn.grid(row=3, column=2, padx=5, pady=5)
+            try:
+                self._last_manage_button = manage_btn
+            except Exception:
+                pass
+            update_staged_indicator()
+        else:
+            try:
+                staged_label.grid_remove()
+            except Exception:
+                pass
         
         form_frame.columnconfigure(1, weight=1)
         
@@ -738,7 +873,8 @@ class InventoryTab(BaseTab):
                     except Exception:
                         new_item['capacity_lbs'] = 0.0
                     new_item['count_contents_toward_carry'] = bool(count_contents_var.get())
-                    new_item['contents'] = current_item.get('contents', []).copy()
+                    # Commit staged contents to be saved when the main dialog's Save is clicked
+                    new_item['contents'] = staged_contents.copy()
 
                 self.character.inventory[index] = new_item
                 
@@ -746,6 +882,18 @@ class InventoryTab(BaseTab):
                 self.update_inventory_display()
                 self.mark_modified()
                 
+                # Clear staged indicator when final save occurs
+                try:
+                    update_staged_indicator()
+                except Exception:
+                    pass
+                # Clear local last-edit dialog diagnostics
+                try:
+                    self._last_edit_dialog_staged_contents = None
+                    self._last_edit_dialog_original_contents = None
+                    self._last_edit_dialog_staged_label_var = None
+                except Exception:
+                    pass
                 dialog.destroy()
                 
             except ValueError:
@@ -762,14 +910,45 @@ class InventoryTab(BaseTab):
             button_frame,
             text="Save",
             command=save_changes).pack(side='left', padx=5)
+        def cancel_and_revert():
+            # Revert any staged changes if the user cancels the edit dialog
+            current_item['contents'] = original_contents.copy()
+            try:
+                self.update_inventory_display()
+            except Exception:
+                pass
+            # Clear staged indicator on cancel
+            try:
+                update_staged_indicator()
+            except Exception:
+                pass
+            # Clear local last-edit dialog diagnostics on cancel
+            try:
+                self._last_edit_dialog_staged_contents = None
+                self._last_edit_dialog_original_contents = None
+                self._last_edit_dialog_staged_label_var = None
+            except Exception:
+                pass
+            dialog.destroy()
         ttk.Button(
             button_frame,
             text="Cancel",
-            command=dialog.destroy).pack(side='left', padx=5)
+            command=cancel_and_revert).pack(side='left', padx=5)
+        dialog.protocol('WM_DELETE_WINDOW', cancel_and_revert)
         
         # Focus on name entry
         name_entry.focus()
         name_entry.select_range(0, tk.END)
+        # Expose callbacks for integration tests
+        try:
+            self._last_edit_dialog_save_fn = save_changes
+            self._last_edit_dialog_cancel_fn = cancel_and_revert
+        except Exception:
+            try:
+                self._last_edit_dialog_save_fn = None
+                self._last_edit_dialog_cancel_fn = None
+            except Exception:
+                pass
 
     def update_inventory_display(self):
         """Update the inventory treeview and weight/capacity displays"""
@@ -839,6 +1018,22 @@ class InventoryTab(BaseTab):
             text=str(penalties['check_penalty']))
         self.labels['enc_speed'].config(
             text=f"{penalties['speed_reduction']} ft")
+
+    def _update_last_edit_dialog_indicator(self):
+        """Helper to update the staged indicator label on the last opened edit dialog."""
+        try:
+            sc = getattr(self, '_last_edit_dialog_staged_contents', None)
+            oc = getattr(self, '_last_edit_dialog_original_contents', None)
+            var = getattr(self, '_last_edit_dialog_staged_label_var', None)
+            if var is None:
+                return
+            if sc != oc:
+                var.set('* Staged Changes')
+            else:
+                var.set('')
+        except Exception:
+            # Best-effort: ignore if data/vars aren't set
+            pass
 
     def update_currency_total(self):
         """Calculate and display total currency value in gold pieces"""
