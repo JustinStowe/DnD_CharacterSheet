@@ -408,7 +408,7 @@ class InventoryTab(BaseTab):
         scrollbar.pack(side='right', fill='y')
 
         # Create treeview for inventory
-        columns = ('name', 'weight', 'quantity', 'total_weight', 'inside_cap', 'counted', 'notes')
+        columns = ('name', 'weight', 'quantity', 'total_weight', 'inside_cap', 'counted', 'notes', 'manage')
         self.inventory_tree = ttk.Treeview(
             list_frame,
             columns=columns,
@@ -422,6 +422,7 @@ class InventoryTab(BaseTab):
         self.inventory_tree.heading('inside_cap', text='Inside/Capacity')
         self.inventory_tree.heading('counted', text='Counted?')
         self.inventory_tree.heading('notes', text='Notes')
+        self.inventory_tree.heading('manage', text='Manage')
 
         self.inventory_tree.column('name', width=200)
         self.inventory_tree.column('weight', width=80)
@@ -430,8 +431,35 @@ class InventoryTab(BaseTab):
         self.inventory_tree.column('inside_cap', width=120)
         self.inventory_tree.column('counted', width=60)
         self.inventory_tree.column('notes', width=250)
+        self.inventory_tree.column('manage', width=80, anchor='center')
 
         self.inventory_tree.pack(fill='both', expand=True)
+        # Bind click to support inline manage actions
+        self.inventory_tree.bind('<ButtonRelease-1>', self._inventory_tree_click)
+
+    def _inventory_tree_click(self, event):
+        # Determine which column was clicked, and if 'manage' clicked and it's a container open the manage dialog
+        try:
+            col = self.inventory_tree.identify_column(event.x)
+            item = self.inventory_tree.identify_row(event.y)
+            if not item:
+                return
+            idx = self.inventory_tree.index(item)
+            if col == f"#{len(self.inventory_tree['columns'])}":
+                # The manage column clicked
+                it = self.character.inventory[idx]
+                if it.get('is_container'):
+                    # Open edit dialog and directly open manage from there
+                    self.inventory_tree.selection_set(item)
+                    self.edit_inventory_item(None)
+                    # If edit dialog's manage button is available, invoke it
+                    try:
+                        if hasattr(self, '_last_manage_button') and self._last_manage_button is not None:
+                            self._last_manage_button.invoke()
+                    except Exception:
+                        pass
+        except Exception:
+            pass
         scrollbar.config(command=self.inventory_tree.yview)
 
         # Bind double-click to edit item
@@ -628,14 +656,18 @@ class InventoryTab(BaseTab):
             cf = ttk.Frame(dlg, padding=10)
             cf.pack(fill='both', expand=True)
 
-            content_tree = ttk.Treeview(cf, columns=('name', 'weight', 'quantity', 'notes'), show='headings')
-            for h, w in [('name', 150), ('weight', 80), ('quantity', 60), ('notes', 200)]:
+            content_tree = ttk.Treeview(cf, columns=('name', 'weight', 'quantity', 'notes', 'manage'), show='headings')
+            for h, w in [('name', 150), ('weight', 80), ('quantity', 60), ('notes', 200), ('manage', 80)]:
                 content_tree.heading(h, text=h.title())
                 content_tree.column(h, width=w)
             content_tree.pack(fill='both', expand=True)
+            # Bind click to support inline manage for nested containers
+            content_tree.bind('<ButtonRelease-1>', lambda e: _on_content_click(e, content_tree, temp_container))
 
             for c in contents:
-                content_tree.insert('', 'end', values=(c.get('name', ''), f"{c.get('weight',0):.1f}", c.get('quantity',1), c.get('notes','')))
+                mv = 'Manage' if c.get('is_container') else ''
+                name_val = (f"📦 {c['name']}" if c.get('is_container') else c.get('name', ''))
+                content_tree.insert('', 'end', values=(name_val, f"{c.get('weight',0):.1f}", c.get('quantity',1), c.get('notes',''), mv))
 
             # Add content controls
             addf = ttk.Frame(cf)
@@ -832,6 +864,88 @@ class InventoryTab(BaseTab):
             # Bind double-click to edit
             content_tree.bind('<Double-1>', edit_content_item)
 
+            # Helper to be used for content tree clicks
+            def _on_content_click(evt, tree, t_container):
+                try:
+                    col = tree.identify_column(evt.x)
+                    row = tree.identify_row(evt.y)
+                    if not row:
+                        return
+                    idx = tree.index(row)
+                    # If manage column clicked, open nested manage if the child is a container
+                    if col == f"#{len(tree['columns'])}":
+                        child = t_container.get('contents', [])[idx]
+                        if child.get('is_container'):
+                            # Open nested manage dialog for this child
+                            # Create a staged copy and open dialog
+                            nested_original = child.get('contents', []).copy()
+                            nested_staged = nested_original.copy()
+                            nested_temp = {
+                                'is_container': True,
+                                'capacity_lbs': child.get('capacity_lbs', 0),
+                                'count_contents_toward_carry': child.get('count_contents_toward_carry', True),
+                                'contents': nested_staged
+                            }
+                            # Show a nested manage dialog. We'll reuse the add/edit/remove behavior defined above by replicating
+                            # a smaller nested manage dialog implementation here to keep changes scoped.
+                            ndlg = tk.Toplevel(self.root)
+                            ndlg.title(f"Manage Contents ({child.get('name')})")
+                            ndlg.transient(self.root)
+                            try:
+                                ndlg.grab_set()
+                            except Exception:
+                                pass
+                            ncf = ttk.Frame(ndlg, padding=10)
+                            ncf.pack(fill='both', expand=True)
+                            # treeview
+                            ntree = ttk.Treeview(ncf, columns=('name', 'weight', 'quantity', 'notes', 'manage'), show='headings')
+                            for h, w in [('name', 150), ('weight', 80), ('quantity', 60), ('notes', 200), ('manage', 80)]:
+                                ntree.heading(h, text=h.title())
+                                ntree.column(h, width=w)
+                            ntree.pack(fill='both', expand=True)
+                            # pre-populate
+                            for cc in nested_staged:
+                                mv2 = 'Manage' if cc.get('is_container') else ''
+                                name_val2 = (f"📦 {cc['name']}" if cc.get('is_container') else cc.get('name', ''))
+                                ntree.insert('', 'end', values=(name_val2, f"{cc.get('weight',0):.1f}", cc.get('quantity',1), cc.get('notes',''), mv2))
+                            # Add controls for nested manage
+                            naf = ttk.Frame(ncf)
+                            naf.pack(fill='x', pady=(5,0))
+                            # labels
+                            ttk.Label(naf, text='Name:').grid(row=0, column=0, padx=2)
+                            ttk.Label(naf, text='Weight (lbs):').grid(row=0, column=1, padx=2)
+                            ttk.Label(naf, text='Qty:').grid(row=0, column=2, padx=2)
+                            ttk.Label(naf, text='Notes:').grid(row=0, column=3, padx=2)
+                            name_n = ttk.Entry(naf, width=20); name_n.grid(row=1, column=0, padx=2)
+                            weight_n = ttk.Entry(naf, width=8); weight_n.grid(row=1, column=1, padx=2)
+                            qty_n = ttk.Entry(naf, width=8); qty_n.grid(row=1, column=2, padx=2); qty_n.insert(0, '1')
+                            notes_n = ttk.Entry(naf, width=30); notes_n.grid(row=1, column=3, padx=2)
+                            is_cont_n_var = tk.BooleanVar(value=False)
+                            is_cont_n_cb = ttk.Checkbutton(naf, text='Is Container', variable=is_cont_n_var); is_cont_n_cb.grid(row=1, column=4, padx=2)
+                            cap_n = ttk.Entry(naf, width=8); cap_n.grid(row=1, column=5, padx=2)
+                            count_n_var = tk.BooleanVar(value=True); count_n_cb = ttk.Checkbutton(naf, text='', variable=count_n_var); count_n_cb.grid(row=1, column=6, padx=2)
+                            def add_nested_item():
+                                nname = name_n.get().strip();
+                                try: nwt = float(weight_n.get()) if weight_n.get() else 0.0
+                                except Exception: nwt = 0.0
+                                try: nq = int(qty_n.get()) if qty_n.get() else 1
+                                except Exception: nq = 1
+                                nnotes = notes_n.get().strip()
+                                nitem = self._normalize_item_schema({'name': nname, 'weight': nwt, 'quantity': nq, 'notes': nnotes, 'is_container': bool(is_cont_n_var.get()), 'capacity_lbs': float(cap_n.get().strip() or 0), 'count_contents_toward_carry': bool(count_n_var.get())})
+                                nested_staged.append(nitem)
+                                ntree.insert('', 'end', values=(('📦 ' + nitem['name']) if nitem['is_container'] else nitem['name'], f"{nitem['weight']:.1f}", nitem['quantity'], nitem['notes'], 'Manage' if nitem['is_container'] else ''))
+                            ttk.Button(naf, text='Add', command=add_nested_item).grid(row=1, column=7, padx=2)
+                            def close_nested():
+                                # commit nested staged contents back to parent child
+                                child['contents'] = nested_staged.copy()
+                                try: self.mark_modified()
+                                except Exception: pass
+                                ndlg.destroy()
+                            btnf2 = ttk.Frame(ncf); btnf2.pack(fill='x', pady=6)
+                            ttk.Button(btnf2, text='Close', command=close_nested).pack(side='left')
+                except Exception:
+                    return
+
             def close_dlg():
                 # Commit staged contents into the current_item when closing the Manage Contents dialog
                 current_item['contents'] = staged_contents.copy()
@@ -1007,9 +1121,15 @@ class InventoryTab(BaseTab):
             notes = item.get('notes', '')
 
             inside_cap_display = f"{inside_weight}/{capacity}" if inside_weight or capacity else ''
-            self.inventory_tree.insert(
-                '', 'end', values=(
-                    name, f"{weight:.1f}", quantity, f"{total_weight:.1f}", inside_cap_display, counted, notes))
+            name_val = (f"📦 {name}" if item.get('is_container') else name)
+            vals = (name_val, f"{weight:.1f}", quantity, f"{total_weight:.1f}", inside_cap_display, counted, notes)
+            if item.get('is_container'):
+                # Add manage label for container
+                vals = vals + ('Manage',)
+            else:
+                vals = vals + ('',)
+            self.inventory_tree.insert('', 'end', values=vals)
+            # Individual row item inserted; 'vals' already contains the manage column and the name value
 
         # Update carrying capacity
         capacity = self.character.get_carrying_capacity()

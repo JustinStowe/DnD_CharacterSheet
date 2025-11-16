@@ -241,6 +241,31 @@ def test_manage_add_controls_have_headers(dummy_gui):
     assert 'Is Container' in texts
     assert 'Capacity (lbs):' in texts
     assert 'Count contents?' in texts
+
+
+def test_inventory_inline_manage_column_and_icon(dummy_gui):
+    from character import Character
+    gui = dummy_gui
+    gui.character = Character()
+    frame = tk.Frame(gui.root)
+    it = InventoryTab(frame, gui)
+    it.build()
+
+    # Add one container and one non-container
+    gui.character.add_item('Chest', 10, 1, 'container', is_container=True, capacity_lbs=50, contents=[])
+    gui.character.add_item('Rope', 5, 1, 'normal', is_container=False, contents=[])
+    it.update_inventory_display()
+    rows = it.inventory_tree.get_children()
+    # Should be two rows
+    assert len(rows) == 2
+    values0 = it.inventory_tree.item(rows[0])['values']
+    values1 = it.inventory_tree.item(rows[1])['values']
+    # For container row, manage column should show 'Manage' and name should start with icon
+    assert values0[-1] == 'Manage'
+    assert values0[0].startswith('📦')
+    # For non-container row, manage column should be empty and no icon
+    assert values1[-1] == ''
+    assert not values1[0].startswith('📦')
     # close the manage dialog if left open
     if hasattr(it, '_last_manage_dlg') and it._last_manage_dlg is not None:
         try:
