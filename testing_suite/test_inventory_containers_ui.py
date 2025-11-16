@@ -238,6 +238,9 @@ def test_manage_add_controls_have_headers(dummy_gui):
     assert 'Weight (lbs):' in texts
     assert 'Qty:' in texts
     assert 'Notes:' in texts
+    assert 'Is Container' in texts
+    assert 'Capacity (lbs):' in texts
+    assert 'Count contents?' in texts
     # close the manage dialog if left open
     if hasattr(it, '_last_manage_dlg') and it._last_manage_dlg is not None:
         try:
@@ -335,11 +338,96 @@ def test_ui_add_content_creates_full_schema(dummy_gui):
     assert 'contents' in c
     # Clean up
     if hasattr(it, '_last_manage_dlg') and it._last_manage_dlg is not None:
-        try:
-            it._last_manage_dlg.destroy()
-        except Exception:
-            pass
+        it._last_manage_dlg.destroy()
     assert 'is_container' in c
     assert 'capacity_lbs' in c
     assert 'count_contents_toward_carry' in c
     assert 'contents' in c
+
+
+def test_ui_add_nested_container_creates_full_schema(dummy_gui):
+    from character import Character
+    gui = dummy_gui
+    gui.character = Character()
+    frame = tk.Frame(gui.root)
+    it = InventoryTab(frame, gui)
+    it.build()
+
+    gui.character.add_item('Little Bag', 1, 1, 'Container', is_container=True, capacity_lbs=100, count_contents_toward_carry=True, contents=[])
+    it.update_inventory_display()
+
+    # Open edit dialog for the container
+    row = it.inventory_tree.get_children()[0]
+    it.inventory_tree.selection_set(row)
+    it.edit_inventory_item(None)
+
+    # Avoid wait_window blocking
+    old_wait = getattr(it.root, 'wait_window', None)
+    it.root.wait_window = lambda d: None
+    try:
+        it._last_manage_button.invoke()
+    finally:
+        if old_wait is not None:
+            it.root.wait_window = old_wait
+
+    addf = it._last_manage_addf
+    # Fill the add inputs (row=1 entries)
+    for c in addf.winfo_children():
+        info = c.grid_info()
+        if info and info.get('row') == 1:
+            col = int(info.get('column'))
+            if col == 0 and isinstance(c, ttk.Entry):
+                c.delete(0, tk.END); c.insert(0, 'Bag in Bag')
+            elif col == 1 and isinstance(c, ttk.Entry):
+                c.delete(0, tk.END); c.insert(0, '0.5')
+            elif col == 2 and isinstance(c, ttk.Entry):
+                c.delete(0, tk.END); c.insert(0, '1')
+            elif col == 3 and isinstance(c, ttk.Entry):
+                c.delete(0, tk.END); c.insert(0, 'Nested small bag')
+            elif col == 4 and isinstance(c, ttk.Checkbutton):
+                # Toggle the is_container checkbutton by setting the underlying variable to 1
+                try:
+                    varname = c.cget('variable')
+                    it.root.setvar(varname, 1)
+                except Exception:
+                    # fallback to invoking the widget
+                    c.invoke()
+            elif col == 5 and isinstance(c, ttk.Entry):
+                c.delete(0, tk.END); c.insert(0, '8')
+
+    # Find the Add button and click it
+    add_btn = None
+    for c in addf.winfo_children():
+        if isinstance(c, ttk.Button) and c.cget('text') == 'Add':
+            add_btn = c
+            break
+    assert add_btn is not None
+    add_btn.invoke()
+
+    # Find Close button and click it to commit staged contents
+    def find_button(widget, text):
+        for child in widget.winfo_children():
+            try:
+                if isinstance(child, ttk.Button) and child.cget('text') == text:
+                    return child
+            except Exception:
+                pass
+            res = find_button(child, text)
+            if res:
+                return res
+        return None
+    dlg = it._last_manage_dlg
+    assert dlg is not None
+    close_btn = find_button(dlg, 'Close')
+    assert close_btn is not None
+    close_btn.invoke()
+
+    # Ensure content was created with normalized schema and is marked as a container
+    container = gui.character.inventory[0]
+    assert len(container['contents']) == 1
+    nested = container['contents'][0]
+    assert nested.get('is_container') is True
+    assert float(nested.get('capacity_lbs', 0)) == 8.0
+    # Clean up
+    if hasattr(it, '_last_manage_dlg') and it._last_manage_dlg is not None:
+        it._last_manage_dlg.destroy()

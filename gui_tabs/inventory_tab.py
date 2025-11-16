@@ -650,6 +650,9 @@ class InventoryTab(BaseTab):
             ttk.Label(addf, text='Weight (lbs):').grid(row=0, column=1, padx=2)
             ttk.Label(addf, text='Qty:').grid(row=0, column=2, padx=2)
             ttk.Label(addf, text='Notes:').grid(row=0, column=3, padx=2)
+            ttk.Label(addf, text='Is Container').grid(row=0, column=4, padx=2)
+            ttk.Label(addf, text='Capacity (lbs):').grid(row=0, column=5, padx=2)
+            ttk.Label(addf, text='Count contents?').grid(row=0, column=6, padx=2)
             name_c = ttk.Entry(addf, width=20)
             name_c.grid(row=1, column=0, padx=2)
             weight_c = ttk.Entry(addf, width=8)
@@ -659,6 +662,14 @@ class InventoryTab(BaseTab):
             q_c.grid(row=1, column=2, padx=2)
             notes_c = ttk.Entry(addf, width=30)
             notes_c.grid(row=1, column=3, padx=2)
+            is_container_c_var = tk.BooleanVar(value=False)
+            is_container_c_cb = ttk.Checkbutton(addf, text='Is Container', variable=is_container_c_var)
+            is_container_c_cb.grid(row=1, column=4, padx=2)
+            capacity_c = ttk.Entry(addf, width=8)
+            capacity_c.grid(row=1, column=5, padx=2)
+            count_c_var = tk.BooleanVar(value=True)
+            count_c_cb = ttk.Checkbutton(addf, text='', variable=count_c_var)
+            count_c_cb.grid(row=1, column=6, padx=2)
 
             def add_content_item():
                 nm = name_c.get().strip()
@@ -672,15 +683,21 @@ class InventoryTab(BaseTab):
                     q = 1
                 nt = notes_c.get().strip()
                 # Create content item with the same schema as inventory items
+                # If user sets a capacity > 0, treat as container regardless of checkbox state
+                try:
+                    cap_val = float(capacity_c.get().strip() or 0)
+                except Exception:
+                    cap_val = 0.0
+                is_container_flag = bool(is_container_c_var.get()) or (cap_val > 0)
                 item = {
                     'name': nm,
                     'weight': wt,
                     'quantity': q,
                     'notes': nt,
                     # Defaults so item inside a container mirrors top-level item schema
-                    'is_container': False,
-                    'capacity_lbs': 0.0,
-                    'count_contents_toward_carry': True,
+                    'is_container': is_container_flag,
+                    'capacity_lbs': cap_val,
+                    'count_contents_toward_carry': bool(count_c_var.get()),
                     'contents': []
                 }
                 ok = self.add_content_to_container(temp_container, item)
@@ -749,6 +766,17 @@ class InventoryTab(BaseTab):
                 notee = ttk.Entry(ef, width=30)
                 notee.grid(row=3, column=1)
                 notee.insert(0, c.get('notes', ''))
+                # Container controls for nested container editing
+                is_container_ed_var = tk.BooleanVar(value=c.get('is_container', False))
+                is_container_ed_cb = ttk.Checkbutton(ef, text='Is Container', variable=is_container_ed_var)
+                is_container_ed_cb.grid(row=4, column=0, padx=2)
+                ttk.Label(ef, text='Capacity (lbs):').grid(row=4, column=1)
+                cap_ed = ttk.Entry(ef, width=12)
+                cap_ed.grid(row=4, column=2)
+                cap_ed.insert(0, str(c.get('capacity_lbs', 0)))
+                count_ed_var = tk.BooleanVar(value=c.get('count_contents_toward_carry', True))
+                count_ed_cb = ttk.Checkbutton(ef, text='Count contents towards carry', variable=count_ed_var)
+                count_ed_cb.grid(row=5, column=0, columnspan=2)
 
                 def save_edit():
                     try:
@@ -758,24 +786,27 @@ class InventoryTab(BaseTab):
                     except Exception:
                         messagebox.showerror('Invalid Input', 'Please provide valid numbers for weight and quantity.', parent=ed)
                         return
-                    # Validate capacity
+                    # Validate parent container capacity
                     cap = current_item.get('capacity_lbs', 0) or 0
-                    if cap > 0:
-                        existing = sum([c0.get('weight',0)*c0.get('quantity',1) for i0,c0 in enumerate(contents) if i0 != idx])
-                        if existing + (nw * nq) > cap:
-                            messagebox.showwarning('Capacity Exceeded', 'Cannot set description: exceeds container capacity.', parent=ed)
-                            return
-                        # Preserve any existing metadata on the content if present (for nested containers)
-                        new = {
-                            'name': nn,
-                            'weight': nw,
-                            'quantity': nq,
-                            'notes': notee.get().strip(),
-                            'is_container': c.get('is_container', False),
-                            'capacity_lbs': c.get('capacity_lbs', 0.0),
-                            'count_contents_toward_carry': c.get('count_contents_toward_carry', True),
-                            'contents': c.get('contents', []).copy() if c.get('contents') else []
-                        }
+                    existing = sum([c0.get('weight',0)*c0.get('quantity',1) for i0,c0 in enumerate(contents) if i0 != idx])
+                    if cap > 0 and (existing + (nw * nq)) > cap:
+                        messagebox.showwarning('Capacity Exceeded', 'Cannot set description: exceeds container capacity.', parent=ed)
+                        return
+                    # Preserve any existing metadata or update from edit fields
+                    try:
+                        updated_cap = float(cap_ed.get().strip() or 0)
+                    except Exception:
+                        updated_cap = 0.0
+                    new = {
+                        'name': nn,
+                        'weight': nw,
+                        'quantity': nq,
+                        'notes': notee.get().strip(),
+                        'is_container': bool(is_container_ed_var.get()) or (updated_cap > 0),
+                        'capacity_lbs': updated_cap,
+                        'count_contents_toward_carry': bool(count_ed_var.get()),
+                        'contents': c.get('contents', []).copy() if c.get('contents') else []
+                    }
                     ok = self.edit_content_in_container(temp_container, idx, new)
                     if not ok:
                         messagebox.showwarning('Capacity Exceeded', 'Cannot set values: exceeds container capacity.', parent=ed)
@@ -796,8 +827,8 @@ class InventoryTab(BaseTab):
                 ttk.Button(ef, text='Cancel', command=ed.destroy).grid(row=4, column=1)
                 self.root.wait_window(ed)
 
-            ttk.Button(addf, text='Add', command=add_content_item).grid(row=1, column=4, padx=2)
-            ttk.Button(addf, text='Remove', command=remove_content_item).grid(row=1, column=5, padx=2)
+            ttk.Button(addf, text='Add', command=add_content_item).grid(row=1, column=7, padx=2)
+            ttk.Button(addf, text='Remove', command=remove_content_item).grid(row=1, column=8, padx=2)
             # Bind double-click to edit
             content_tree.bind('<Double-1>', edit_content_item)
 
