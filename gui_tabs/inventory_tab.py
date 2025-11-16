@@ -5,6 +5,8 @@ Inventory Tab - Character inventory, carrying capacity, and encumbrance
 import tkinter as tk
 from tkinter import ttk, messagebox
 from .base_tab import BaseTab
+from dialogs.manage_contents_dialog import show_manage_contents_dialog
+from inventory_parts import helpers as inv_helpers
 
 
 class InventoryTab(BaseTab):
@@ -21,14 +23,13 @@ class InventoryTab(BaseTab):
             return False
         cap = container_item.get('capacity_lbs', 0) or 0
         if cap > 0:
-            current = sum([c.get('weight', 0) * c.get('quantity', 1) for c in container_item.get('contents', [])])
+            current = sum(c.get('weight', 0) * c.get('quantity', 1) for c in container_item.get('contents', []))
             new_total = current + (content_item.get('weight', 0) * content_item.get('quantity', 1))
             if new_total > cap:
                 return False
         # normalize the content item schema so nested items are consistent
-        normalized = self._normalize_item_schema(content_item)
-        container_item.setdefault('contents', []).append(normalized)
-        return True
+        # Use helper to add (handles normalization)
+        return inv_helpers.add_content_to_container(container_item, content_item)
 
     def edit_content_in_container(self, container_item, index, new_content):
         """Edit content in container at index; validate capacity. Returns True on success."""
@@ -39,20 +40,18 @@ class InventoryTab(BaseTab):
             return False
         cap = container_item.get('capacity_lbs', 0) or 0
         if cap > 0:
-            existing = sum([c.get('weight', 0) * c.get('quantity', 1) for i, c in enumerate(contents) if i != index])
+            existing = sum(c.get('weight', 0) * c.get('quantity', 1) for i, c in enumerate(contents) if i != index)
             new_total = existing + (new_content.get('weight', 0) * new_content.get('quantity', 1))
             if new_total > cap:
                 return False
-        contents[index] = self._normalize_item_schema(new_content)
-        return True
+        return inv_helpers.edit_content_in_container(container_item, index, new_content)
 
     def remove_content_from_container(self, container_item, index):
         """Remove content at index from container. Returns True if removed."""
         contents = container_item.get('contents', [])
         if not (0 <= index < len(contents)):
             return False
-        contents.pop(index)
-        return True
+        return inv_helpers.remove_content_from_container(container_item, index)
 
     def _normalize_item_schema(self, item):
         """Ensure an item dict uses the full item schema used for top-level inventory items.
@@ -631,323 +630,43 @@ class InventoryTab(BaseTab):
                 pass
 
         def manage_contents():
-            # Open a small dialog to manage contents
-            contents = staged_contents
-            # Use a temp container wrapper so add/edit/remove act on staged_contents
-            temp_container = {
-                'is_container': True,
-                'capacity_lbs': current_item.get('capacity_lbs', 0),
-                'count_contents_toward_carry': current_item.get('count_contents_toward_carry', True),
-                'contents': staged_contents
-            }
-            dlg = tk.Toplevel(self.root)
-            dlg.title('Manage Contents')
-            dlg.transient(self.root)
-            try:
-                dlg.grab_set()
-            except Exception:
-                # In headless environments or where grabs are not permitted, proceed without modal grab
-                pass
-            try:
-                self._last_manage_dlg = dlg
-            except Exception:
-                pass
-
-            cf = ttk.Frame(dlg, padding=10)
-            cf.pack(fill='both', expand=True)
-
-            content_tree = ttk.Treeview(cf, columns=('name', 'weight', 'quantity', 'notes', 'manage'), show='headings')
-            for h, w in [('name', 150), ('weight', 80), ('quantity', 60), ('notes', 200), ('manage', 80)]:
-                content_tree.heading(h, text=h.title())
-                content_tree.column(h, width=w)
-            content_tree.pack(fill='both', expand=True)
-            # Bind click to support inline manage for nested containers
-            content_tree.bind('<ButtonRelease-1>', lambda e: _on_content_click(e, content_tree, temp_container))
-
-            for c in contents:
-                mv = 'Manage' if c.get('is_container') else ''
-                name_val = (f"📦 {c['name']}" if c.get('is_container') else c.get('name', ''))
-                content_tree.insert('', 'end', values=(name_val, f"{c.get('weight',0):.1f}", c.get('quantity',1), c.get('notes',''), mv))
-
-            # Add content controls
-            addf = ttk.Frame(cf)
-            addf.pack(fill='x', pady=(5,0))
-            try:
-                # expose addf so tests can inspect the add controls
-                self._last_manage_addf = addf
-            except Exception:
-                pass
-            # Column headers for the add content controls
-            ttk.Label(addf, text='Name:').grid(row=0, column=0, padx=2)
-            ttk.Label(addf, text='Weight (lbs):').grid(row=0, column=1, padx=2)
-            ttk.Label(addf, text='Qty:').grid(row=0, column=2, padx=2)
-            ttk.Label(addf, text='Notes:').grid(row=0, column=3, padx=2)
-            ttk.Label(addf, text='Is Container').grid(row=0, column=4, padx=2)
-            ttk.Label(addf, text='Capacity (lbs):').grid(row=0, column=5, padx=2)
-            ttk.Label(addf, text='Count contents?').grid(row=0, column=6, padx=2)
-            name_c = ttk.Entry(addf, width=20)
-            name_c.grid(row=1, column=0, padx=2)
-            weight_c = ttk.Entry(addf, width=8)
-            weight_c.grid(row=1, column=1, padx=2)
-            q_c = ttk.Entry(addf, width=8)
-            q_c.insert(0, '1')
-            q_c.grid(row=1, column=2, padx=2)
-            notes_c = ttk.Entry(addf, width=30)
-            notes_c.grid(row=1, column=3, padx=2)
-            is_container_c_var = tk.BooleanVar(value=False)
-            is_container_c_cb = ttk.Checkbutton(addf, text='Is Container', variable=is_container_c_var)
-            is_container_c_cb.grid(row=1, column=4, padx=2)
-            capacity_c = ttk.Entry(addf, width=8)
-            capacity_c.grid(row=1, column=5, padx=2)
-            count_c_var = tk.BooleanVar(value=True)
-            count_c_cb = ttk.Checkbutton(addf, text='', variable=count_c_var)
-            count_c_cb.grid(row=1, column=6, padx=2)
-
-            def add_content_item():
-                nm = name_c.get().strip()
+            # Open the centralized Manage Contents dialog
+            def _on_close():
                 try:
-                    wt = float(weight_c.get()) if weight_c.get() else 0.0
-                except Exception:
-                    wt = 0.0
-                try:
-                    q = int(q_c.get()) if q_c.get() else 1
-                except Exception:
-                    q = 1
-                nt = notes_c.get().strip()
-                # Create content item with the same schema as inventory items
-                # If user sets a capacity > 0, treat as container regardless of checkbox state
-                try:
-                    cap_val = float(capacity_c.get().strip() or 0)
-                except Exception:
-                    cap_val = 0.0
-                is_container_flag = bool(is_container_c_var.get()) or (cap_val > 0)
-                item = {
-                    'name': nm,
-                    'weight': wt,
-                    'quantity': q,
-                    'notes': nt,
-                    # Defaults so item inside a container mirrors top-level item schema
-                    'is_container': is_container_flag,
-                    'capacity_lbs': cap_val,
-                    'count_contents_toward_carry': bool(count_c_var.get()),
-                    'contents': []
-                }
-                ok = self.add_content_to_container(temp_container, item)
-                if not ok:
-                    messagebox.showwarning('Capacity Exceeded', 'Cannot add item: exceeds container capacity.', parent=dlg)
-                    return
-                # Refresh tree
-                content_tree.insert('', 'end', values=(nm, f"{wt:.1f}", q, nt))
-                name_c.delete(0, tk.END)
-                weight_c.delete(0, tk.END)
-                q_c.delete(0, tk.END)
-                q_c.insert(0, '1')
-                notes_c.delete(0, tk.END)
-                # Mark character modified so it's clear something changed
-                try:
-                    self.mark_modified()
-                except Exception:
-                    pass
-                try:
-                    update_staged_indicator()
-                except Exception:
-                    pass
-
-            def remove_content_item():
-                sel = content_tree.selection()
-                if not sel:
-                    return
-                idx = content_tree.index(sel[0])
-                content_tree.delete(sel[0])
-                removed = self.remove_content_from_container(temp_container, idx)
-                if removed:
+                    current_item['contents'] = staged_contents.copy()
+                    try:
+                        self.update_inventory_display()
+                    except Exception:
+                        pass
                     try:
                         self.mark_modified()
                     except Exception:
                         pass
-                    try:
-                        update_staged_indicator()
-                    except Exception:
-                        pass
-
-            def edit_content_item(_evt=None):
-                sel = content_tree.selection()
-                if not sel:
-                    return
-                idx = content_tree.index(sel[0])
-                c = contents[idx]
-                # open small edit dialog
-                ed = tk.Toplevel(dlg)
-                ed.transient(dlg)
-                ed.grab_set()
-                ef = ttk.Frame(ed, padding=10)
-                ef.pack(fill='both', expand=True)
-                ttk.Label(ef, text='Name:').grid(row=0, column=0)
-                ne = ttk.Entry(ef, width=30)
-                ne.grid(row=0, column=1)
-                ne.insert(0, c.get('name', ''))
-                ttk.Label(ef, text='Weight:').grid(row=1, column=0)
-                we = ttk.Entry(ef, width=12)
-                we.grid(row=1, column=1)
-                we.insert(0, str(c.get('weight', 0)))
-                ttk.Label(ef, text='Qty:').grid(row=2, column=0)
-                qe = ttk.Entry(ef, width=8)
-                qe.grid(row=2, column=1)
-                qe.insert(0, str(c.get('quantity', 1)))
-                ttk.Label(ef, text='Notes:').grid(row=3, column=0)
-                notee = ttk.Entry(ef, width=30)
-                notee.grid(row=3, column=1)
-                notee.insert(0, c.get('notes', ''))
-                # Container controls for nested container editing
-                is_container_ed_var = tk.BooleanVar(value=c.get('is_container', False))
-                is_container_ed_cb = ttk.Checkbutton(ef, text='Is Container', variable=is_container_ed_var)
-                is_container_ed_cb.grid(row=4, column=0, padx=2)
-                ttk.Label(ef, text='Capacity (lbs):').grid(row=4, column=1)
-                cap_ed = ttk.Entry(ef, width=12)
-                cap_ed.grid(row=4, column=2)
-                cap_ed.insert(0, str(c.get('capacity_lbs', 0)))
-                count_ed_var = tk.BooleanVar(value=c.get('count_contents_toward_carry', True))
-                count_ed_cb = ttk.Checkbutton(ef, text='Count contents towards carry', variable=count_ed_var)
-                count_ed_cb.grid(row=5, column=0, columnspan=2)
-
-                def save_edit():
-                    try:
-                        nn = ne.get().strip()
-                        nw = float(we.get().strip() or 0)
-                        nq = int(qe.get().strip() or 1)
-                    except Exception:
-                        messagebox.showerror('Invalid Input', 'Please provide valid numbers for weight and quantity.', parent=ed)
-                        return
-                    # Validate parent container capacity
-                    cap = current_item.get('capacity_lbs', 0) or 0
-                    existing = sum([c0.get('weight',0)*c0.get('quantity',1) for i0,c0 in enumerate(contents) if i0 != idx])
-                    if cap > 0 and (existing + (nw * nq)) > cap:
-                        messagebox.showwarning('Capacity Exceeded', 'Cannot set description: exceeds container capacity.', parent=ed)
-                        return
-                    # Preserve any existing metadata or update from edit fields
-                    try:
-                        updated_cap = float(cap_ed.get().strip() or 0)
-                    except Exception:
-                        updated_cap = 0.0
-                    new = {
-                        'name': nn,
-                        'weight': nw,
-                        'quantity': nq,
-                        'notes': notee.get().strip(),
-                        'is_container': bool(is_container_ed_var.get()) or (updated_cap > 0),
-                        'capacity_lbs': updated_cap,
-                        'count_contents_toward_carry': bool(count_ed_var.get()),
-                        'contents': c.get('contents', []).copy() if c.get('contents') else []
-                    }
-                    ok = self.edit_content_in_container(temp_container, idx, new)
-                    if not ok:
-                        messagebox.showwarning('Capacity Exceeded', 'Cannot set values: exceeds container capacity.', parent=ed)
-                        return
-                    # update tree entry
-                    content_tree.item(sel[0], values=(new.get('name',''), f"{new.get('weight',0):.1f}", new.get('quantity',1), new.get('notes','')))
-                    try:
-                        self.mark_modified()
-                    except Exception:
-                        pass
-                    try:
-                        update_staged_indicator()
-                    except Exception:
-                        pass
-                    ed.destroy()
-
-                ttk.Button(ef, text='Save', command=save_edit).grid(row=4, column=0)
-                ttk.Button(ef, text='Cancel', command=ed.destroy).grid(row=4, column=1)
-                self.root.wait_window(ed)
-
-            ttk.Button(addf, text='Add', command=add_content_item).grid(row=1, column=7, padx=2)
-            ttk.Button(addf, text='Remove', command=remove_content_item).grid(row=1, column=8, padx=2)
-            # Bind double-click to edit
-            content_tree.bind('<Double-1>', edit_content_item)
-
-            # Helper to be used for content tree clicks
-            def _on_content_click(evt, tree, t_container):
-                try:
-                    col = tree.identify_column(evt.x)
-                    row = tree.identify_row(evt.y)
-                    if not row:
-                        return
-                    idx = tree.index(row)
-                    # If manage column clicked, open nested manage if the child is a container
-                    if col == f"#{len(tree['columns'])}":
-                        child = t_container.get('contents', [])[idx]
-                        if child.get('is_container'):
-                            # Open nested manage dialog for this child
-                            # Create a staged copy and open dialog
-                            nested_original = child.get('contents', []).copy()
-                            nested_staged = nested_original.copy()
-                            nested_temp = {
-                                'is_container': True,
-                                'capacity_lbs': child.get('capacity_lbs', 0),
-                                'count_contents_toward_carry': child.get('count_contents_toward_carry', True),
-                                'contents': nested_staged
-                            }
-                            # Show a nested manage dialog. We'll reuse the add/edit/remove behavior defined above by replicating
-                            # a smaller nested manage dialog implementation here to keep changes scoped.
-                            ndlg = tk.Toplevel(self.root)
-                            ndlg.title(f"Manage Contents ({child.get('name')})")
-                            ndlg.transient(self.root)
-                            try:
-                                ndlg.grab_set()
-                            except Exception:
-                                pass
-                            ncf = ttk.Frame(ndlg, padding=10)
-                            ncf.pack(fill='both', expand=True)
-                            # treeview
-                            ntree = ttk.Treeview(ncf, columns=('name', 'weight', 'quantity', 'notes', 'manage'), show='headings')
-                            for h, w in [('name', 150), ('weight', 80), ('quantity', 60), ('notes', 200), ('manage', 80)]:
-                                ntree.heading(h, text=h.title())
-                                ntree.column(h, width=w)
-                            ntree.pack(fill='both', expand=True)
-                            # pre-populate
-                            for cc in nested_staged:
-                                mv2 = 'Manage' if cc.get('is_container') else ''
-                                name_val2 = (f"📦 {cc['name']}" if cc.get('is_container') else cc.get('name', ''))
-                                ntree.insert('', 'end', values=(name_val2, f"{cc.get('weight',0):.1f}", cc.get('quantity',1), cc.get('notes',''), mv2))
-                            # Add controls for nested manage
-                            naf = ttk.Frame(ncf)
-                            naf.pack(fill='x', pady=(5,0))
-                            # labels
-                            ttk.Label(naf, text='Name:').grid(row=0, column=0, padx=2)
-                            ttk.Label(naf, text='Weight (lbs):').grid(row=0, column=1, padx=2)
-                            ttk.Label(naf, text='Qty:').grid(row=0, column=2, padx=2)
-                            ttk.Label(naf, text='Notes:').grid(row=0, column=3, padx=2)
-                            name_n = ttk.Entry(naf, width=20); name_n.grid(row=1, column=0, padx=2)
-                            weight_n = ttk.Entry(naf, width=8); weight_n.grid(row=1, column=1, padx=2)
-                            qty_n = ttk.Entry(naf, width=8); qty_n.grid(row=1, column=2, padx=2); qty_n.insert(0, '1')
-                            notes_n = ttk.Entry(naf, width=30); notes_n.grid(row=1, column=3, padx=2)
-                            is_cont_n_var = tk.BooleanVar(value=False)
-                            is_cont_n_cb = ttk.Checkbutton(naf, text='Is Container', variable=is_cont_n_var); is_cont_n_cb.grid(row=1, column=4, padx=2)
-                            cap_n = ttk.Entry(naf, width=8); cap_n.grid(row=1, column=5, padx=2)
-                            count_n_var = tk.BooleanVar(value=True); count_n_cb = ttk.Checkbutton(naf, text='', variable=count_n_var); count_n_cb.grid(row=1, column=6, padx=2)
-                            def add_nested_item():
-                                nname = name_n.get().strip();
-                                try: nwt = float(weight_n.get()) if weight_n.get() else 0.0
-                                except Exception: nwt = 0.0
-                                try: nq = int(qty_n.get()) if qty_n.get() else 1
-                                except Exception: nq = 1
-                                nnotes = notes_n.get().strip()
-                                nitem = self._normalize_item_schema({'name': nname, 'weight': nwt, 'quantity': nq, 'notes': nnotes, 'is_container': bool(is_cont_n_var.get()), 'capacity_lbs': float(cap_n.get().strip() or 0), 'count_contents_toward_carry': bool(count_n_var.get())})
-                                nested_staged.append(nitem)
-                                ntree.insert('', 'end', values=(('📦 ' + nitem['name']) if nitem['is_container'] else nitem['name'], f"{nitem['weight']:.1f}", nitem['quantity'], nitem['notes'], 'Manage' if nitem['is_container'] else ''))
-                            ttk.Button(naf, text='Add', command=add_nested_item).grid(row=1, column=7, padx=2)
-                            def close_nested():
-                                # commit nested staged contents back to parent child
-                                child['contents'] = nested_staged.copy()
-                                try: self.mark_modified()
-                                except Exception: pass
-                                ndlg.destroy()
-                            btnf2 = ttk.Frame(ncf); btnf2.pack(fill='x', pady=6)
-                            ttk.Button(btnf2, text='Close', command=close_nested).pack(side='left')
                 except Exception:
-                    return
+                    pass
+                try:
+                    self._last_manage_addf = None
+                    self._last_manage_dlg = None
+                except Exception:
+                    pass
 
-            def close_dlg():
-                # Commit staged contents into the current_item when closing the Manage Contents dialog
+            ref = show_manage_contents_dialog(
+                self.root,
+                current_item,
+                staged_contents,
+                on_modified=lambda: self.mark_modified(),
+                on_update_indicator=update_staged_indicator,
+                on_close=_on_close,
+            )
+            # Expose returned refs for tests
+            try:
+                self._last_manage_dlg = ref.get('dlg')
+                self._last_manage_addf = ref.get('addf')
+                self._last_manage_tree = ref.get('tree')
+            except Exception:
+                pass
+            # Commit staged contents into the current_item when closing the Manage Contents dialog
+            try:
                 current_item['contents'] = staged_contents.copy()
                 try:
                     self.update_inventory_display()
@@ -957,18 +676,19 @@ class InventoryTab(BaseTab):
                     self.mark_modified()
                 except Exception:
                     pass
-                try:
-                    self._last_manage_addf = None
-                    self._last_manage_dlg = None
-                except Exception:
-                    pass
-                dlg.destroy()
-
-            btnf = ttk.Frame(cf)
-            btnf.pack(fill='x', pady=6)
-            ttk.Button(btnf, text='Close', command=close_dlg).pack(side='left')
-            self.root.wait_window(dlg)
-            # Do NOT save contents back here - they are staged until the main dialog is saved
+            except Exception:
+                pass
+            # If the dialog has been destroyed (i.e., not alive), clear last refs.
+            try:
+                dlg_ref = ref.get('dlg') if isinstance(ref, dict) else None
+                if dlg_ref is None or not getattr(dlg_ref, 'winfo_exists', lambda: False)():
+                    try:
+                        self._last_manage_addf = None
+                        self._last_manage_dlg = None
+                    except Exception:
+                        pass
+            except Exception:
+                pass
 
         if current_item.get('is_container'):
             manage_btn = ttk.Button(form_frame, text='Manage Contents', command=manage_contents)
