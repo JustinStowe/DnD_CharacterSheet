@@ -164,7 +164,7 @@ def show_manage_contents_dialog(
                 return
             # Validate parent capacity for this child edit
             cap = current_item.get('capacity_lbs', 0) or 0
-            existing = sum([c0.get('weight',0)*c0.get('quantity',1) for i0,c0 in enumerate(staged_contents) if i0 != idx])
+            existing = sum(c0.get('weight',0)*c0.get('quantity',1) for i0,c0 in enumerate(staged_contents) if i0 != idx)
             if cap > 0 and (existing + (nw * nq)) > cap:
                 messagebox.showwarning('Capacity Exceeded', 'Cannot set description: exceeds container capacity.', parent=ed)
                 return
@@ -221,8 +221,10 @@ def show_manage_contents_dialog(
     content_tree.bind('<ButtonRelease-1>', _on_content_click)
 
     # Add/Remove buttons
-    ttk.Button(addf, text='Add', command=add_content_item).grid(row=1, column=7, padx=2)
-    ttk.Button(addf, text='Remove', command=remove_content_item).grid(row=1, column=8, padx=2)
+    add_btn = ttk.Button(addf, text='Add', command=add_content_item)
+    add_btn.grid(row=1, column=7, padx=2)
+    remove_btn = ttk.Button(addf, text='Remove', command=remove_content_item)
+    remove_btn.grid(row=1, column=8, padx=2)
 
     def close_dlg():
         try:
@@ -232,12 +234,26 @@ def show_manage_contents_dialog(
             pass
         dlg.destroy()
     btnf = ttk.Frame(cf); btnf.pack(fill='x', pady=6)
-    ttk.Button(btnf, text='Close', command=close_dlg).pack(side='left')
+    close_btn = ttk.Button(btnf, text='Close', command=close_dlg)
+    close_btn.pack(side='left')
 
     try:
         root.wait_window(dlg)
     except Exception:
         pass
     # Return dialog references for tests
-    return {'dlg': dlg, 'addf': addf, 'tree': content_tree}
+    # expose widget references for test harnesses to avoid scanning children in tests
+    widgets = {
+        'name': name_c,
+        'weight': weight_c,
+        'quantity': q_c,
+        'notes': notes_c,
+        'is_container': is_container_c_cb,
+        'capacity': capacity_c,
+        'count_contents': count_c_cb,
+        'add_button': add_btn,
+        'remove_button': remove_btn,
+        'close_button': close_btn,
+    }
+    return {'dlg': dlg, 'addf': addf, 'tree': content_tree, 'widgets': widgets}
         

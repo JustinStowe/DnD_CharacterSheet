@@ -53,20 +53,7 @@ class InventoryTab(BaseTab):
             return False
         return inv_helpers.remove_content_from_container(container_item, index)
 
-    def _normalize_item_schema(self, item):
-        """Ensure an item dict uses the full item schema used for top-level inventory items.
-        This makes contents items more consistent with top-level items.
-        """
-        return {
-            'name': item.get('name', ''),
-            'weight': item.get('weight', 0.0),
-            'quantity': item.get('quantity', 1),
-            'notes': item.get('notes', ''),
-            'is_container': bool(item.get('is_container', False)),
-            'capacity_lbs': float(item.get('capacity_lbs', 0.0) or 0.0),
-            'count_contents_toward_carry': bool(item.get('count_contents_toward_carry', True)),
-            'contents': item.get('contents', []).copy() if item.get('contents') else []
-        }
+    # normalization logic moved to inventory_parts.helpers.normalize_item_schema()
 
     def build(self):
         """Build the inventory tab"""
@@ -663,6 +650,7 @@ class InventoryTab(BaseTab):
                 self._last_manage_dlg = ref.get('dlg')
                 self._last_manage_addf = ref.get('addf')
                 self._last_manage_tree = ref.get('tree')
+                self._last_manage_widgets = ref.get('widgets')
             except Exception:
                 pass
             # Commit staged contents into the current_item when closing the Manage Contents dialog

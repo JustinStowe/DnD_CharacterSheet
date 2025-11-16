@@ -913,9 +913,7 @@ class Character:
             total += base_weight
             if item.get('is_container') and item.get('contents'):
                 # Sum contents weight
-                contents_weight = 0
-                for c in item.get('contents', []):
-                    contents_weight += c.get('weight', 0) * c.get('quantity', 1)
+                contents_weight = sum(c.get('weight', 0) * c.get('quantity', 1) for c in item.get('contents', []))
                 # Add contents weight only if the container has the flag set
                 if item.get('count_contents_toward_carry', True):
                     total += contents_weight

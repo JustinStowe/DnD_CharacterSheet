@@ -30,6 +30,92 @@ def test_add_container_via_add_form(dummy_gui):
     assert float(last_item['capacity_lbs']) == 50.0
 
 
+def _fill_manage_add_widgets(widgets, name, weight, quantity, notes, is_container=False, capacity=None):
+    widgets['name'].delete(0, tk.END); widgets['name'].insert(0, name)
+    widgets['weight'].delete(0, tk.END); widgets['weight'].insert(0, str(weight))
+    widgets['quantity'].delete(0, tk.END); widgets['quantity'].insert(0, str(quantity))
+    widgets['notes'].delete(0, tk.END); widgets['notes'].insert(0, notes)
+    if capacity is not None:
+        widgets['capacity'].delete(0, tk.END); widgets['capacity'].insert(0, str(capacity))
+    if is_container:
+        try:
+            widgets['is_container'].invoke()
+        except Exception:
+            pass
+
+
+def test_nested_containers_persist_after_save_and_load(dummy_gui):
+    from character import Character
+    from inventory_parts import helpers as inv_helpers
+    gui = dummy_gui
+    gui.character = Character()
+    frame = tk.Frame(gui.root)
+    it = InventoryTab(frame, gui)
+    it.build()
+
+    # Create outer container and add nested container + a nested item
+    gui.character.add_item('Outer Bag', 1, 1, 'Container', is_container=True, capacity_lbs=100, count_contents_toward_carry=True, contents=[])
+    outer = gui.character.inventory[-1]
+    ok = inv_helpers.add_content_to_container(outer, {'name':'Inner Bag','weight':1,'quantity':1,'notes':'','is_container':True,'capacity_lbs':10,'count_contents_toward_carry':True,'contents':[]})
+    assert ok
+    inner = outer['contents'][0]
+    # add item to inner container
+    ok2 = inv_helpers.add_content_to_container(inner, {'name':'Coin Pouch','weight':0.1,'quantity':10,'notes':''})
+    assert ok2
+
+    # Save/load via to_dict/from_dict
+    data = gui.character.to_dict()
+    new_char = Character()
+    new_char.from_dict(data)
+    new_outer = new_char.inventory[-1]
+    assert new_outer.get('is_container') is True
+    assert len(new_outer.get('contents', [])) == 1
+    new_inner = new_outer['contents'][0]
+    assert new_inner.get('is_container') is True
+    assert len(new_inner.get('contents', [])) == 1
+    assert new_inner['contents'][0]['name'] == 'Coin Pouch'
+
+
+def test_add_container_with_zero_capacity(dummy_gui):
+    from character import Character
+    gui = dummy_gui
+    gui.character = Character()
+    frame = tk.Frame(gui.root)
+    it = InventoryTab(frame, gui)
+    it.build()
+
+    # Fill add form with zero capacity
+    it.entries['item_name'].insert(0, 'Tiny Pouch')
+    it.entries['item_weight'].insert(0, '0.5')
+    it.entries['item_quantity'].delete(0, tk.END); it.entries['item_quantity'].insert(0, '1')
+    it.entries['item_capacity'].insert(0, '0')
+    it.is_container_var.set(True); it.count_contents_var.set(True)
+    it.add_inventory_item()
+    last_item = gui.character.inventory[-1]
+    assert last_item['is_container'] is True
+    assert float(last_item['capacity_lbs']) == 0.0
+
+
+def test_add_container_with_negative_capacity(dummy_gui):
+    from character import Character
+    gui = dummy_gui
+    gui.character = Character()
+    frame = tk.Frame(gui.root)
+    it = InventoryTab(frame, gui)
+    it.build()
+
+    # Fill add form with negative capacity
+    it.entries['item_name'].insert(0, 'Broken Chest')
+    it.entries['item_weight'].insert(0, '10')
+    it.entries['item_quantity'].delete(0, tk.END); it.entries['item_quantity'].insert(0, '1')
+    it.entries['item_capacity'].insert(0, '-10')
+    it.is_container_var.set(True); it.count_contents_var.set(True)
+    it.add_inventory_item()
+    last_item = gui.character.inventory[-1]
+    assert last_item['is_container'] is True
+    assert float(last_item['capacity_lbs']) == -10.0
+
+
 def test_edit_container_manage_contents(dummy_gui):
     from character import Character
     gui = dummy_gui
@@ -233,7 +319,8 @@ def test_manage_add_controls_have_headers(dummy_gui):
 
     # Now inspect the addf frame's children and check for header labels
     assert hasattr(it, '_last_manage_addf') and it._last_manage_addf is not None
-    texts = [c.cget('text') for c in it._last_manage_addf.winfo_children() if isinstance(c, tk.Label) or isinstance(c, ttk.Label)]
+    assert hasattr(it, '_last_manage_widgets') and it._last_manage_widgets is not None
+    texts = [c.cget('text') for c in it._last_manage_addf.winfo_children() if isinstance(c, (tk.Label, ttk.Label))]
     assert 'Name:' in texts
     assert 'Weight (lbs):' in texts
     assert 'Qty:' in texts
@@ -310,48 +397,15 @@ def test_ui_add_content_creates_full_schema(dummy_gui):
         if old_wait is not None:
             it.root.wait_window = old_wait
 
-    addf = it._last_manage_addf
-    # Fill the add inputs (identify entries by grid column)
-    for c in addf.winfo_children():
-        info = c.grid_info()
-        if info and info.get('row') == 1:
-            col = int(info.get('column'))
-            if col == 0 and isinstance(c, ttk.Entry):
-                c.delete(0, tk.END); c.insert(0, 'Lantern')
-            elif col == 1 and isinstance(c, ttk.Entry):
-                c.delete(0, tk.END); c.insert(0, '2')
-            elif col == 2 and isinstance(c, ttk.Entry):
-                c.delete(0, tk.END); c.insert(0, '1')
-            elif col == 3 and isinstance(c, ttk.Entry):
-                c.delete(0, tk.END); c.insert(0, 'A bamboo lantern')
+    widgets = it._last_manage_widgets
+    widgets['name'].delete(0, tk.END); widgets['name'].insert(0, 'Lantern')
+    widgets['weight'].delete(0, tk.END); widgets['weight'].insert(0, '2')
+    widgets['quantity'].delete(0, tk.END); widgets['quantity'].insert(0, '1')
+    widgets['notes'].delete(0, tk.END); widgets['notes'].insert(0, 'A bamboo lantern')
 
-    # Find the Add button and click it
-    add_btn = None
-    for c in addf.winfo_children():
-        if isinstance(c, ttk.Button) and c.cget('text') == 'Add':
-            add_btn = c
-            break
-    assert add_btn is not None
-    add_btn.invoke()
-
-    # Commit staged contents by clicking the Close button in the manage dialog
-    # Find Close button by searching widget tree recursively
-    def find_button(widget, text):
-        for child in widget.winfo_children():
-            try:
-                if isinstance(child, ttk.Button) and child.cget('text') == text:
-                    return child
-            except Exception:
-                pass
-            res = find_button(child, text)
-            if res:
-                return res
-        return None
-    dlg = it._last_manage_dlg
-    assert dlg is not None
-    close_btn = find_button(dlg, 'Close')
-    assert close_btn is not None
-    close_btn.invoke()
+    # Click the Add button and then click Close to commit staged contents
+    widgets['add_button'].invoke()
+    widgets['close_button'].invoke()
 
     # Ensure content was created with normalized schema
     container = gui.character.inventory[0]
@@ -395,57 +449,24 @@ def test_ui_add_nested_container_creates_full_schema(dummy_gui):
         if old_wait is not None:
             it.root.wait_window = old_wait
 
-    addf = it._last_manage_addf
-    # Fill the add inputs (row=1 entries)
-    for c in addf.winfo_children():
-        info = c.grid_info()
-        if info and info.get('row') == 1:
-            col = int(info.get('column'))
-            if col == 0 and isinstance(c, ttk.Entry):
-                c.delete(0, tk.END); c.insert(0, 'Bag in Bag')
-            elif col == 1 and isinstance(c, ttk.Entry):
-                c.delete(0, tk.END); c.insert(0, '0.5')
-            elif col == 2 and isinstance(c, ttk.Entry):
-                c.delete(0, tk.END); c.insert(0, '1')
-            elif col == 3 and isinstance(c, ttk.Entry):
-                c.delete(0, tk.END); c.insert(0, 'Nested small bag')
-            elif col == 4 and isinstance(c, ttk.Checkbutton):
-                # Toggle the is_container checkbutton by setting the underlying variable to 1
-                try:
-                    varname = c.cget('variable')
-                    it.root.setvar(varname, 1)
-                except Exception:
-                    # fallback to invoking the widget
-                    c.invoke()
-            elif col == 5 and isinstance(c, ttk.Entry):
-                c.delete(0, tk.END); c.insert(0, '8')
+    widgets = it._last_manage_widgets
+    widgets['name'].delete(0, tk.END); widgets['name'].insert(0, 'Bag in Bag')
+    widgets['weight'].delete(0, tk.END); widgets['weight'].insert(0, '0.5')
+    widgets['quantity'].delete(0, tk.END); widgets['quantity'].insert(0, '1')
+    widgets['notes'].delete(0, tk.END); widgets['notes'].insert(0, 'Nested small bag')
+    try:
+        # set variable on checkbutton
+        varname = widgets['is_container'].cget('variable')
+        it.root.setvar(varname, 1)
+    except Exception:
+        widgets['is_container'].invoke()
+    widgets['capacity'].delete(0, tk.END); widgets['capacity'].insert(0, '8')
 
     # Find the Add button and click it
-    add_btn = None
-    for c in addf.winfo_children():
-        if isinstance(c, ttk.Button) and c.cget('text') == 'Add':
-            add_btn = c
-            break
-    assert add_btn is not None
-    add_btn.invoke()
+    widgets['add_button'].invoke()
 
-    # Find Close button and click it to commit staged contents
-    def find_button(widget, text):
-        for child in widget.winfo_children():
-            try:
-                if isinstance(child, ttk.Button) and child.cget('text') == text:
-                    return child
-            except Exception:
-                pass
-            res = find_button(child, text)
-            if res:
-                return res
-        return None
-    dlg = it._last_manage_dlg
-    assert dlg is not None
-    close_btn = find_button(dlg, 'Close')
-    assert close_btn is not None
-    close_btn.invoke()
+    # Close the manage dialog to commit staged contents
+    widgets['close_button'].invoke()
 
     # Ensure content was created with normalized schema and is marked as a container
     container = gui.character.inventory[0]

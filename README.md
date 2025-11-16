@@ -79,7 +79,7 @@ An interactive character sheet application that automatically updates derived st
 - **Feats Section**: Add feats with name, type, prerequisites, and benefit
   - Types: General, Metamagic, Item Creation, Combat, Skill, Special
   - Full text descriptions for benefits
-- **Epic Feats Button** (Level 21+): Access epic feats for epic level characters; the proressions and checks are applied automatically
+- **Epic Feats Button** (Level 21+): Access epic feats for epic level characters; the progressions and checks are applied automatically
 
 ### Magic Items Tab
 
@@ -930,7 +930,7 @@ Possible additions:
 
 ## Contributing
 
-Thanks for considering contributing! Below are guidelines and conventions to help contributors get setup and make high-quality changes.
+Thanks for considering contributing! Below are guidelines and conventions to help contributors get set up and make high-quality changes.
 
 ### Branches & Workflow
 
@@ -977,7 +977,7 @@ python -m pytest -q
 
 ### Release & Changelog
 
-- If your change affects user-visible behavior, add an entry to `CHANGELOG.md` (create one if it doesn't exist) describing the change and the rational.
+- If your change affects user-visible behavior, add an entry to `CHANGELOG.md` (create one if it doesn't exist) describing the change and the rationale.
 
 ### PR Checklist
 
